@@ -542,7 +542,18 @@ textarea{min-height:74px;resize:vertical}
     <div class="pel-step-hint">Cada peligro pertenece a una sola fuente. Elige una.</div>
     <div class="gema-fuente-grid" id="pel-gema-grid"></div>
     <div class="gema-hint" id="pel-gema-hint" style="display:none"></div>
-    <button class="btn btn-orange" style="margin-top:14px" onclick="pelStepGo(2)">Siguiente <i class="ti ti-arrow-right"></i></button>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-orange" style="flex:1" onclick="pelStepGo(2)">Siguiente <i class="ti ti-arrow-right"></i></button>
+      <button class="btn btn-sec" style="flex:1" onclick="toggleModoRapido()"><i class="ti ti-bolt"></i> Modo rápido</button>
+    </div>
+    <div id="pel-rapido-box" style="display:none;margin-top:16px">
+      <div class="sec-div">MODO RÁPIDO — agrega varios peligros de esta misma fuente</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Escribe uno, agrégalo, sigue escribiendo los que falten. Quedan guardados sin clasificar — los clasificas de a uno después, desde la lista de peligros.</div>
+      <div id="pel-rapido-chat"></div>
+      <textarea id="pel-rapido-input" placeholder="Describe un peligro..." style="min-height:50px;margin-top:8px"></textarea>
+      <button class="btn btn-orange" style="margin-top:8px" onclick="agregarPeligroRapido()"><i class="ti ti-plus"></i> Agregar y seguir</button>
+      <button class="btn btn-sec" style="margin-top:8px" onclick="terminarModoRapido()"><i class="ti ti-check"></i> Terminar, volver a la lista</button>
+    </div>
   </div>
 
   <!-- PASO 2: descripción -->
@@ -602,8 +613,8 @@ textarea{min-height:74px;resize:vertical}
 
   <div id="gab-auto" style="display:none">
     <div id="gab-definicion" class="gab-def"></div>
-    <label class="fl" style="margin-top:12px">Tipo de riesgo (forma del daño)</label>
-    <input type="text" id="gab-tiporiesgo" placeholder="Ej: golpeado por, contacto con objeto cortopunzante, caída de altura...">
+    <label class="fl" style="margin-top:12px">Riesgo ISP <span style="color:var(--muted);font-weight:400">(editable si necesitas adaptarlo)</span></label>
+    <input type="text" id="gab-riesgo-edit" placeholder="Nombre del riesgo específico...">
     <div class="sec-div" style="margin-top:16px">DATOS OFICIALES ISP (editables)</div>
     <label class="fl">Fuente de peligro</label>
     <textarea id="gab-fuente" style="min-height:50px"></textarea>
@@ -686,21 +697,36 @@ textarea{min-height:74px;resize:vertical}
 
 <div id="s-perfil" class="scr">
   <button class="btn-sm" onclick="gt('s-home')" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Inicio</button>
-  <div class="page-title">Perfil del prevencionista</div>
-  <label class="fl">Nombre completo</label>
-  <input type="text" id="p-nombre" placeholder="Tu nombre">
-  <label class="fl">Cargo</label>
-  <input type="text" id="p-cargo" placeholder="Prevencionista de Riesgos">
-  <label class="fl">N° de registro SEREMI (opcional)</label>
-  <input type="text" id="p-registro" placeholder="Reg. profesional">
-  <label class="fl">Firma (PNG con fondo transparente)</label>
-  <input type="file" id="p-firma-input" accept="image/png" style="display:none" onchange="onFirmaPerfil(this)">
-  <button class="btn btn-sec" onclick="document.getElementById('p-firma-input').click()"><i class="ti ti-signature"></i> Subir mi firma</button>
-  <div id="p-firma-prev"></div>
-  <label class="fl" style="margin-top:12px">URL del Google Sheet (Apps Script)</label>
-  <input type="text" id="p-sheet-url" placeholder="https://script.google.com/macros/s/.../exec">
-  <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4">Pega aquí la URL de implementación de tu Apps Script para volcar entrevistas a la matriz.</div>
-  <button class="btn btn-orange" style="margin-top:16px" onclick="guardarPerfil()"><i class="ti ti-device-floppy"></i> Guardar perfil</button>
+  <div class="page-title">Usuarios</div>
+  <div class="page-sub">Selecciona o crea un perfil</div>
+
+  <div id="usuarios-list"></div>
+  <button class="btn btn-orange" style="margin-top:8px" onclick="nuevoUsuario()"><i class="ti ti-user-plus"></i> Nuevo usuario</button>
+
+  <div class="divider" style="margin-top:16px"></div>
+  <button class="btn btn-black" onclick="gt('s-catalogos')"><i class="ti ti-map"></i> Catálogo de áreas</button>
+  <button class="btn btn-black" style="margin-top:8px" onclick="gt('s-catalogos')"><i class="ti ti-database"></i> Respaldo de registros</button>
+
+  <div id="usuario-edit-box" style="display:none;margin-top:16px">
+    <div class="sec-div">EDITAR PERFIL</div>
+    <label class="fl">Nombre completo</label>
+    <input type="text" id="p-nombre" placeholder="Tu nombre">
+    <label class="fl">Cargo</label>
+    <input type="text" id="p-cargo" placeholder="Prevencionista de Riesgos">
+    <label class="fl">N° de registro SEREMI (opcional)</label>
+    <input type="text" id="p-registro" placeholder="Reg. profesional">
+    <label class="fl">Firma (PNG con fondo transparente)</label>
+    <input type="file" id="p-firma-input" accept="image/png" style="display:none" onchange="onFirmaPerfil(this)">
+    <button class="btn btn-sec" onclick="document.getElementById('p-firma-input').click()"><i class="ti ti-signature"></i> Subir mi firma</button>
+    <div id="p-firma-prev"></div>
+    <button class="btn btn-orange" style="margin-top:16px" onclick="guardarPerfil()"><i class="ti ti-device-floppy"></i> Guardar perfil</button>
+    <button class="btn btn-sec" style="margin-top:8px" onclick="cerrarEdicionUsuario()">Cancelar</button>
+  </div>
+
+  <div class="divider" style="margin-top:16px"></div>
+  <label class="fl">URL del Google Sheet (Apps Script)</label>
+  <input type="text" id="p-sheet-url" onchange="guardarConfigCompartida()" placeholder="https://script.google.com/macros/s/.../exec">
+  <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4">Pega aquí la URL de implementación de tu Apps Script para volcar entrevistas a la matriz. Es una sola URL compartida por todos los perfiles.</div>
 </div>
 
 <div id="s-historial" class="scr">
@@ -822,7 +848,8 @@ function exportarCatalogos(){
     _fecha: hoy()+' '+hora(),
     catalogos: CAT,
     entrevistas: entrevistas,
-    perfil: usuarioActivo || null
+    usuarios: JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]'),
+    config: JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -833,7 +860,7 @@ function exportarCatalogos(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  alert('Respaldo completo exportado (catálogos + entrevistas + perfil). Guárdalo y pásalo al otro dispositivo para importarlo.');
+  alert('Respaldo completo exportado (catálogos + entrevistas + perfiles). Guárdalo y pásalo al otro dispositivo para importarlo.');
 }
 
 function importarCatalogos(inp){
@@ -892,11 +919,23 @@ function importarCatalogos(inp){
         localStorage.setItem(DK, JSON.stringify(fusionadas));
       }
 
-      // 3. Perfil: solo si no hay perfil local (no pisar el propio)
-      if(esRespaldo && data.perfil && !usuarioActivo){
-        usuarioActivo = data.perfil;
-        localStorage.setItem('miper-user', JSON.stringify(usuarioActivo));
+      // 3. Usuarios: fusionar por id (agrega los que falten, nunca pisa los que ya tienes)
+      if(esRespaldo && data.usuarios && data.usuarios.length){
+        const usuariosActuales = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+        const idsUsuariosActuales = usuariosActuales.map(u=>u.id);
+        const usuariosNuevos = data.usuarios.filter(u=>!idsUsuariosActuales.includes(u.id));
+        if(usuariosNuevos.length){
+          localStorage.setItem(USUARIOS_KEY, JSON.stringify(usuariosActuales.concat(usuariosNuevos)));
+        }
+        if(usuariosActuales.length===0 && usuariosNuevos.length){
+          localStorage.setItem(USER_ACTIVO_KEY, usuariosNuevos[0].id);
+        }
       }
+      // Config compartida (URL de Sheets): solo si no hay una ya configurada localmente
+      if(esRespaldo && data.config && data.config.sheetUrl && !JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}').sheetUrl){
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config));
+      }
+      cargarUsuarios();
 
       rCatBody();
       alert('Importación completa.\nCatálogos reemplazados.'+(esRespaldo?'\n'+nuevasCount+' entrevistas nuevas agregadas, '+actualizaCount+' actualizadas.':''));
@@ -924,7 +963,7 @@ function gt(id){
   if(id==='s-seguimiento') rSeguimiento(segFiltro);
   if(id==='s-tarea-herr') rTareaHerrModal();
   if(id==='s-herr-peligros') rHerrPeligrosModal();
-  if(id==='s-perfil' && usuarioActivo){document.getElementById('p-nombre').value=usuarioActivo.nombre||'';document.getElementById('p-cargo').value=usuarioActivo.cargo||'';document.getElementById('p-registro').value=usuarioActivo.registro||'';document.getElementById('p-sheet-url').value=usuarioActivo.sheetUrl||'';document.getElementById('p-firma-prev').innerHTML=usuarioActivo.firma?'<img src="'+usuarioActivo.firma+'" style="max-height:70px;margin-top:8px;background:#eee;border-radius:6px;padding:4px">':'';}
+  if(id==='s-perfil'){ cargarUsuarios(); rUsuarios(); }
 }
 
 function rHome(){
@@ -1389,7 +1428,7 @@ let pelTmp = {};
 function nuevoPeligroObj(){
   return { id:uid(), gema:'', descTerreno:'', foto:null, sensibilidades:[],
     controlSugerido:'', jerarquiaSugerida:'',
-    codigo:'', categoria:'', familia:'', riesgo:'', tipoRiesgo:'',
+    codigo:'', categoria:'', familia:'', riesgo:'',
     fuente:'', mecanismo:'', consecuencia:'',
     consecPersonas:'', consecMA:'', consecProceso:'', consecInfra:'',
     prob:'', cons:'', vep:'', nivel:'',
@@ -1494,6 +1533,40 @@ function rGemaGrid(){
   }
 }
 function selGema(id){ pelTmp.gema=id; rGemaGrid(); }
+
+// ═══════════════ MODO RÁPIDO: agregar varios peligros seguidos (estilo chat) ═══════════════
+let pelRapidoAgregados = [];
+function toggleModoRapido(){
+  if(!pelTmp.gema){ alert('Elige la fuente GEMA primero'); return; }
+  const box = document.getElementById('pel-rapido-box');
+  const abrir = box.style.display==='none';
+  box.style.display = abrir?'block':'none';
+  if(abrir) rPelRapidoChat();
+}
+function agregarPeligroRapido(){
+  const inp = document.getElementById('pel-rapido-input');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  const nuevo = nuevoPeligroObj();
+  nuevo.gema = pelTmp.gema;
+  nuevo.descTerreno = txt;
+  entrevista.peligros.push(nuevo);
+  pelRapidoAgregados.push(nuevo);
+  inp.value='';
+  rPelRapidoChat();
+}
+function rPelRapidoChat(){
+  const el = document.getElementById('pel-rapido-chat');
+  if(!el) return;
+  el.innerHTML = pelRapidoAgregados.map(p=>'<div style="background:var(--surface2);border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:13px">'+san(p.descTerreno)+'</div>').join('');
+}
+function terminarModoRapido(){
+  pelRapidoAgregados = [];
+  const box = document.getElementById('pel-rapido-box');
+  if(box) box.style.display='none';
+  rPeligros();
+  gt('s-peligros');
+}
 
 // Jerarquía de control sugerida en terreno
 const JERARQUIA = ['Eliminación','Sustitución','Ingeniería','Administrativo','EPP'];
@@ -1606,8 +1679,8 @@ function gabRiesgoChange(keep){
     document.getElementById('gab-mecanismo').value = p.mecanismo||rObj.mecanismo||'';
     document.getElementById('gab-consecuencia').value = p.consecuencia||rObj.consecuencia||'';
   }
-  // Dimensiones
-  document.getElementById('gab-tiporiesgo').value = p.tipoRiesgo||'';
+  // Riesgo ISP (editable): usar lo ya guardado si existe, si no el nombre por defecto del catálogo
+  document.getElementById('gab-riesgo-edit').value = (keep && p.riesgo) ? p.riesgo : (rObj.riesgo||'');
   document.getElementById('gab-cons-personas').value = p.consecPersonas||'';
   document.getElementById('gab-cons-ma').value = p.consecMA||'';
   document.getElementById('gab-cons-proc').value = p.consecProceso||'';
@@ -1749,6 +1822,16 @@ function rFotosPendientesBadge(){
 function reintentarFotosPendientes(){ intentarSubirFotosPendientes(); alert('Reintentando subida de fotos pendientes...'); }
 
 function jerColor(j){ return {'Eliminación':'#C62828','Sustitución':'#EF6C00','Ingeniería':'#0F4C81','Administrativo':'#2A7D46','EPP':'#7A4D9E'}[j]||'#999'; }
+// Dibuja una imagen respetando su proporción real, ajustada dentro de una caja máxima (sin estirar) y centrada en ella
+function addImgFit(doc, dataUrl, format, x, y, maxW, maxH){
+  try{
+    const props = doc.getImageProperties(dataUrl);
+    const ratio = props.width / props.height;
+    let w = maxW, h = maxW/ratio;
+    if(h > maxH){ h = maxH; w = maxH*ratio; }
+    doc.addImage(dataUrl, format, x + (maxW-w)/2, y + (maxH-h)/2, w, h);
+  }catch(err){}
+}
 function selCtrlJer(j){ gabCtrlJerSel = (gabCtrlJerSel===j?'':j); rGabControles(); }
 function estadoColor(e){ return {'Pendiente':'#C62828','Ejecutado':'#EF6C00','Verificado':'#2A7D46'}[e]||'#999'; }
 function cambiarEstadoControl(i,nuevoEstado){
@@ -1793,6 +1876,11 @@ function setEstadoControlGlobal(entrevistaId, peligroIdx, controlIdx, nuevoEstad
   rSeguimiento(segFiltro);
   rHome();
 }
+let segAbiertos = new Set();
+function toggleGrupoSeg(id){
+  if(segAbiertos.has(id)) segAbiertos.delete(id); else segAbiertos.add(id);
+  rSeguimiento(segFiltro);
+}
 function rSeguimiento(filtro){
   segFiltro = filtro || segFiltro || 'Todos';
   document.querySelectorAll('#seg-filtros .tog').forEach(b=>b.classList.remove('active'));
@@ -1802,19 +1890,39 @@ function rSeguimiento(filtro){
   const el = document.getElementById('seguimiento-list');
   if(!el) return;
   if(items.length===0){ el.innerHTML = emptyMsg('Sin controles en este estado'); return; }
-  el.innerHTML = items.slice().reverse().map(it=>{
-    const col = estadoColor(it.estado);
-    let btns = '';
-    if(it.estado==='Pendiente') btns = '<button class="btn-sm" style="flex:1;background:#FAECE7;color:#E8500A" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-check"></i> Marcar ejecutado</button>';
-    else if(it.estado==='Ejecutado') btns = '<button class="btn-sm" style="flex:1;background:#EAF3DE;color:#27500A" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Verificado\')"><i class="ti ti-shield-check"></i> Verificar</button>'+
-      '<button class="btn-sm" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Pendiente\')"><i class="ti ti-arrow-back-up"></i></button>';
-    else btns = '<button class="btn-sm" style="flex:1" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-arrow-back-up"></i> Reabrir</button>';
-    return '<div class="card"><div class="card-row">'+
-      '<div class="icon-box" style="background:'+col+'"><i class="ti ti-shield-check" style="color:#fff;font-size:20px"></i></div>'+
-      '<div style="flex:1"><div class="card-label">'+san(it.texto)+'</div>'+
-      '<div class="card-desc">'+san(it.jerarquia||'Sin jerarquía')+' · '+san(it.tarea)+' · '+san(it.trabNombre)+' · '+san(it.fecha)+'</div>'+
-      '<div style="font-size:11px;margin-top:2px;color:'+col+'">'+it.estado+(it.fechaEstado?' — '+san(it.fechaEstado):'')+'</div></div></div>'+
-      '<div style="display:flex;gap:6px;margin-top:8px">'+btns+'</div></div>';
+
+  // Agrupar por entrevista: evita la lista plana infinita, un grupo = una entrevista
+  const grupos = {};
+  items.forEach(it=>{
+    if(!grupos[it.entrevistaId]) grupos[it.entrevistaId] = { trabNombre:it.trabNombre, tarea:it.tarea, fecha:it.fecha, items:[] };
+    grupos[it.entrevistaId].items.push(it);
+  });
+  const gruposArr = Object.keys(grupos).map(id=>Object.assign({id}, grupos[id]));
+  gruposArr.sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||''));
+
+  el.innerHTML = gruposArr.map(g=>{
+    const pend = g.items.filter(x=>x.estado==='Pendiente').length;
+    const abierto = segAbiertos.has(g.id);
+    const rows = g.items.map(it=>{
+      const col = estadoColor(it.estado);
+      let btns = '';
+      if(it.estado==='Pendiente') btns = '<div class="mini-btn" style="color:#E8500A" title="Marcar ejecutado" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-check"></i></div>';
+      else if(it.estado==='Ejecutado') btns = '<div class="mini-btn" style="color:#2A7D46" title="Verificar" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Verificado\')"><i class="ti ti-shield-check"></i></div>'+
+        '<div class="mini-btn" title="Revertir a pendiente" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Pendiente\')"><i class="ti ti-arrow-back-up"></i></div>';
+      else btns = '<div class="mini-btn" title="Reabrir" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-arrow-back-up"></i></div>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
+        '<div style="flex:1;font-size:12px"><div>'+san(it.texto)+'</div><div style="color:var(--muted);font-size:11px">'+san(it.jerarquia||'Sin jerarquía')+' · '+it.estado+(it.fechaEstado?' · '+san(it.fechaEstado):'')+'</div></div>'+
+        '<div style="display:flex;gap:4px">'+btns+'</div></div>';
+    }).join('');
+    return '<div class="card" style="padding-bottom:'+(abierto?'8px':'0')+'">'+
+      '<div class="card-row" style="cursor:pointer" onclick="toggleGrupoSeg(\''+g.id+'\')">'+
+      '<div class="icon-box" style="background:'+(pend>0?'#C62828':'#2A7D46')+'"><i class="ti ti-user" style="color:#fff;font-size:20px"></i></div>'+
+      '<div style="flex:1"><div class="card-label">'+san(g.trabNombre||'(sin nombre)')+'</div>'+
+      '<div class="card-desc">'+san(g.tarea)+' · '+san(g.fecha)+' · '+g.items.length+' control'+(g.items.length!==1?'es':'')+(pend>0?' · '+pend+' pendiente'+(pend!==1?'s':''):'')+'</div></div>'+
+      '<i class="ti '+(abierto?'ti-chevron-up':'ti-chevron-down')+'" style="color:var(--light)"></i></div>'+
+      (abierto?('<div style="margin-top:4px">'+rows+'</div>'):'')+
+      '</div>';
   }).join('');
 }
 function agregarControl(){
@@ -1841,9 +1949,9 @@ function guardarGabinete(){
   const cod = document.getElementById('gab-riesgo').value;
   if(!cod){ alert('Selecciona el riesgo específico'); return; }
   const rObj = CASCADA[cat][fam].find(r=>r.codigo===cod);
-  p.categoria = cat; p.familia = fam; p.codigo = cod; p.riesgo = rObj.riesgo;
+  p.categoria = cat; p.familia = fam; p.codigo = cod;
+  p.riesgo = document.getElementById('gab-riesgo-edit').value.trim() || rObj.riesgo;
   p.fuente = document.getElementById('gab-fuente').value.trim();
-  p.tipoRiesgo = document.getElementById('gab-tiporiesgo').value.trim();
   p.mecanismo = document.getElementById('gab-mecanismo').value.trim();
   p.consecuencia = document.getElementById('gab-consecuencia').value.trim();
   p.consecPersonas = document.getElementById('gab-cons-personas').value.trim();
@@ -1935,24 +2043,120 @@ function mostrarEstadoFirma(){
   }
 }
 
+// ═══════════════ USUARIOS (multi-perfil) ═══════════════
+const USUARIOS_KEY = 'miper-usuarios';
+const USER_ACTIVO_KEY = 'miper-user-activo-id';
+const CONFIG_KEY = 'miper-config';
+let usuarios = [];
+let usuarioActivoId = null;
+let usuarioEditId = null;
+let usuarioFirmaTmp = null;
+
+function migrarUsuarioLegacy(){
+  if(localStorage.getItem(USUARIOS_KEY)) return;
+  const legacy = localStorage.getItem('miper-user');
+  if(legacy){
+    try{
+      const u = JSON.parse(legacy);
+      const nuevo = { id: uid(), nombre:u.nombre||'', cargo:u.cargo||'', registro:u.registro||'', firma:u.firma||null };
+      localStorage.setItem(USUARIOS_KEY, JSON.stringify([nuevo]));
+      localStorage.setItem(USER_ACTIVO_KEY, nuevo.id);
+      if(u.sheetUrl) localStorage.setItem(CONFIG_KEY, JSON.stringify({sheetUrl:u.sheetUrl}));
+    }catch(err){}
+  }
+}
+function cargarUsuarios(){
+  migrarUsuarioLegacy();
+  usuarios = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+  usuarioActivoId = localStorage.getItem(USER_ACTIVO_KEY);
+  usuarioActivo = usuarios.find(u=>u.id===usuarioActivoId) || null;
+  const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}');
+  if(usuarioActivo) usuarioActivo.sheetUrl = cfg.sheetUrl||'';
+  if(document.getElementById('home-user')) document.getElementById('home-user').textContent = (usuarioActivo?usuarioActivo.nombre:'Sin perfil') + ' — Aerovías DAP';
+}
+function seleccionarUsuario(id){
+  usuarioActivoId = id;
+  localStorage.setItem(USER_ACTIVO_KEY, id);
+  cargarUsuarios();
+  rUsuarios();
+}
+function nuevoUsuario(){
+  usuarioEditId = null;
+  usuarioFirmaTmp = null;
+  document.getElementById('p-nombre').value='';
+  document.getElementById('p-cargo').value='';
+  document.getElementById('p-registro').value='';
+  document.getElementById('p-firma-prev').innerHTML='';
+  document.getElementById('usuario-edit-box').style.display='block';
+  window.scrollTo(0,0);
+}
+function editarUsuario(id){
+  const u = usuarios.find(x=>x.id===id);
+  if(!u) return;
+  usuarioEditId = id;
+  usuarioFirmaTmp = u.firma||null;
+  document.getElementById('p-nombre').value=u.nombre||'';
+  document.getElementById('p-cargo').value=u.cargo||'';
+  document.getElementById('p-registro').value=u.registro||'';
+  document.getElementById('p-firma-prev').innerHTML = u.firma?'<img src="'+u.firma+'" style="max-height:70px;margin-top:8px;background:#eee;border-radius:6px;padding:4px">':'';
+  document.getElementById('usuario-edit-box').style.display='block';
+  window.scrollTo(0,0);
+}
+function cerrarEdicionUsuario(){
+  const box = document.getElementById('usuario-edit-box');
+  if(box) box.style.display='none';
+}
 function guardarPerfil(){
   const nombre = document.getElementById('p-nombre').value.trim();
   const cargo = document.getElementById('p-cargo').value.trim();
   const registro = document.getElementById('p-registro').value.trim();
-  if(!nombre){alert('Ingresa tu nombre');return;}
-  usuarioActivo = {nombre, cargo, registro, firma: (usuarioActivo&&usuarioActivo.firma)||null, sheetUrl: document.getElementById('p-sheet-url').value.trim()};
-  localStorage.setItem('miper-user', JSON.stringify(usuarioActivo));
-  document.getElementById('home-user').textContent = nombre + ' — Aerovías DAP';
+  if(!nombre){ alert('Ingresa tu nombre'); return; }
+  usuarios = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+  if(usuarioEditId){
+    const idx = usuarios.findIndex(u=>u.id===usuarioEditId);
+    if(idx>=0) usuarios[idx] = Object.assign(usuarios[idx], {nombre, cargo, registro, firma:usuarioFirmaTmp});
+  } else {
+    const nuevo = { id: uid(), nombre, cargo, registro, firma: usuarioFirmaTmp };
+    usuarios.push(nuevo);
+    usuarioActivoId = nuevo.id;
+    localStorage.setItem(USER_ACTIVO_KEY, usuarioActivoId);
+  }
+  localStorage.setItem(USUARIOS_KEY, JSON.stringify(usuarios));
+  cargarUsuarios();
+  cerrarEdicionUsuario();
+  rUsuarios();
   alert('Perfil guardado');
-  gt('s-home');
+}
+function guardarConfigCompartida(){
+  const sheetUrl = document.getElementById('p-sheet-url').value.trim();
+  localStorage.setItem(CONFIG_KEY, JSON.stringify({sheetUrl}));
+  if(usuarioActivo) usuarioActivo.sheetUrl = sheetUrl;
+}
+function rUsuarios(){
+  const el = document.getElementById('usuarios-list');
+  if(!el) return;
+  if(usuarios.length===0){ el.innerHTML = emptyMsg('Sin perfiles — crea el primero'); }
+  else el.innerHTML = usuarios.map(u=>{
+    const activo = u.id===usuarioActivoId;
+    const inicial = (u.nombre||'?').trim().charAt(0).toUpperCase()||'?';
+    return '<div class="card" style="cursor:pointer;'+(activo?'background:#FEF0E8;border-color:#E8500A':'')+'" onclick="seleccionarUsuario(\''+u.id+'\')">'+
+      '<div class="card-row">'+
+      '<div class="icon-box" style="background:#0F4C81;border-radius:50%;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center">'+inicial+'</div>'+
+      '<div style="flex:1"><div class="card-label">'+san(u.nombre||'(sin nombre)')+(activo?' <span style="font-size:10px;background:#E8500A;color:#fff;padding:2px 6px;border-radius:20px;margin-left:4px">ACTIVO</span>':'')+'</div>'+
+      '<div class="card-desc">'+san(u.cargo||'')+'</div></div>'+
+      '<div class="mini-btn" onclick="event.stopPropagation();editarUsuario(\''+u.id+'\')"><i class="ti ti-pencil"></i></div>'+
+      '</div></div>';
+  }).join('');
+  const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}');
+  const urlEl = document.getElementById('p-sheet-url');
+  if(urlEl) urlEl.value = cfg.sheetUrl||'';
 }
 function onFirmaPerfil(inp){
   if(!inp.files||!inp.files[0])return;
   const r=new FileReader();
   r.onload=ev=>{
     // Preservar PNG transparente sin recomprimir a JPEG
-    usuarioActivo = usuarioActivo||{};
-    usuarioActivo.firma = ev.target.result;
+    usuarioFirmaTmp = ev.target.result;
     document.getElementById('p-firma-prev').innerHTML='<img src="'+ev.target.result+'" style="max-height:70px;margin-top:8px;background:#eee;border-radius:6px;padding:4px">';
   };
   r.readAsDataURL(inp.files[0]);
@@ -2510,8 +2714,8 @@ function genPDF(e){
   doc.setDrawColor(0,0,0);
   doc.line(M+8, fy, M+70, fy);
   doc.line(PW-M-70, fy, PW-M-8, fy);
-  if(e.firmaTrabajador){ try{ doc.addImage(e.firmaTrabajador,'PNG',M+15,fy-16,45,16); }catch(err){} }
-  if(usuarioActivo && usuarioActivo.firma){ try{ doc.addImage(usuarioActivo.firma,'PNG',PW-M-63,fy-16,45,16); }catch(err){} }
+  if(e.firmaTrabajador){ addImgFit(doc, e.firmaTrabajador, 'PNG', M+15, fy-16, 45, 16); }
+  if(usuarioActivo && usuarioActivo.firma){ addImgFit(doc, usuarioActivo.firma, 'PNG', PW-M-63, fy-16, 45, 16); }
   doc.setFontSize(8); doc.setTextColor(0,0,0);
   doc.text('Firma Trabajador Entrevistado', M+8, fy+5);
   doc.text('Firma Prevencionista de Riesgos', PW-M-70, fy+5);
@@ -2596,8 +2800,7 @@ function guardarPerfilInit(){}
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadCat();
-  const u = localStorage.getItem('miper-user');
-  if(u) usuarioActivo = JSON.parse(u);
+  cargarUsuarios();
   rHome();
 });
 </script>
