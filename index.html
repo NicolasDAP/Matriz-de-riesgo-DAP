@@ -298,6 +298,7 @@ textarea{min-height:74px;resize:vertical}
     <div class="stat-card" onclick="gt('s-historial')"><div class="stat-num" id="st-sinclasificar">0</div><div class="stat-label">Sin clasificar</div></div>
     <div class="stat-card" onclick="gt('s-seguimiento')"><div class="stat-num" id="st-ctrlpend">0</div><div class="stat-label">Controles pendientes</div></div>
     <div class="stat-card" onclick="gt('s-historial')"><div class="stat-num" id="st-nosync">0</div><div class="stat-label">Sin subir a matriz</div></div>
+    <div class="stat-card" onclick="gt('s-historial')"><div class="stat-num" id="st-sinarchivar">0</div><div class="stat-label">Sin archivar en Drive</div></div>
   </div>
 
   <div id="fotos-pend-badge" onclick="reintentarFotosPendientes()" style="font-size:12px;color:var(--orange);text-align:center;margin-bottom:8px;cursor:pointer"></div>
@@ -354,7 +355,9 @@ textarea{min-height:74px;resize:vertical}
       <select id="d-cargo"><option value="">—</option></select>
       <input type="text" id="d-cargo-otro" placeholder="Otro cargo..." style="display:none;margin-top:6px">
     </div>
-    <div><label class="fl">Antigüedad</label><input type="text" id="d-antiguedad" placeholder="Ej: 1 año"></div>
+    <div><label class="fl">Antigüedad (años)</label>
+      <div style="position:relative"><input type="number" step="0.1" min="0" id="d-antiguedad" placeholder="Ej: 2.5" style="padding-right:44px"><span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">años</span></div>
+    </div>
   </div>
   <label class="fl">Área macro</label>
   <select id="d-area-macro" onchange="dAreaMacroChange()"><option value="">—</option></select>
@@ -382,8 +385,6 @@ textarea{min-height:74px;resize:vertical}
     <div class="tog" onclick="selTipoTarea('Rutinaria',this)">Rutinaria</div>
     <div class="tog" onclick="selTipoTarea('No rutinaria',this)">No rutinaria</div>
   </div>
-  <label class="fl">Lugar</label>
-  <input type="text" id="d-lugar" placeholder="Ej: Hangar 1">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
     <div><label class="fl">N° ideal de trabajadores</label>
       <input type="number" id="d-ideal" placeholder="Ej: 2">
@@ -391,6 +392,12 @@ textarea{min-height:74px;resize:vertical}
     <div><label class="fl">N° real de trabajadores</label>
       <input type="number" id="d-real" placeholder="Ej: 1">
     </div>
+  </div>
+  <label class="fl" style="margin-top:8px">N° real por identidad sexogenérica <span style="color:var(--muted);font-weight:400">(punto 6.1 Guía ISP)</span></label>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div><label class="fl" style="font-size:10px">Hombres</label><input type="number" id="d-gen-h" placeholder="0"></div>
+    <div><label class="fl" style="font-size:10px">Mujeres</label><input type="number" id="d-gen-m" placeholder="0"></div>
+    <div><label class="fl" style="font-size:10px">Otra / no binario</label><input type="number" id="d-gen-o" placeholder="0"></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
     <div><label class="fl">Fecha</label><input type="date" id="d-fecha"></div>
@@ -459,6 +466,7 @@ textarea{min-height:74px;resize:vertical}
     <div class="cat-tab" id="ctab-procesos" onclick="catTab('procesos')">Procesos</div>
     <div class="cat-tab" id="ctab-tareas" onclick="catTab('tareas')">Tareas</div>
     <div class="cat-tab" id="ctab-herr" onclick="catTab('herr')">Herram.</div>
+    <div class="cat-tab" id="ctab-suspel" onclick="catTab('suspel')">Sustancias</div>
     <div class="cat-tab" id="ctab-sens" onclick="catTab('sens')">Sensib.</div>
     <div class="cat-tab" id="ctab-cargos" onclick="catTab('cargos')">Cargos</div>
     <div class="cat-tab" id="ctab-epp" onclick="catTab('epp')">EPP</div>
@@ -539,18 +547,14 @@ textarea{min-height:74px;resize:vertical}
   <!-- PASO 1: fuente GEMA -->
   <div class="pel-step" id="pel-step-1">
     <div class="pel-step-q">¿De qué fuente viene <b>este</b> peligro?</div>
-    <div class="pel-step-hint">Cada peligro pertenece a una sola fuente. Elige una.</div>
+    <div class="pel-step-hint">Elige la fuente y describe el peligro abajo. Se guarda sin clasificar — lo clasificas y completas el detalle después, desde la lista.</div>
     <div class="gema-fuente-grid" id="pel-gema-grid"></div>
     <div class="gema-hint" id="pel-gema-hint" style="display:none"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn btn-orange" style="flex:1" onclick="pelStepGo(2)">Siguiente <i class="ti ti-arrow-right"></i></button>
-      <button class="btn btn-sec" style="flex:1" onclick="toggleModoRapido()"><i class="ti ti-bolt"></i> Modo rápido</button>
-    </div>
     <div id="pel-rapido-box" style="display:none;margin-top:16px">
-      <div class="sec-div">MODO RÁPIDO — agrega varios peligros de esta misma fuente</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Escribe uno, agrégalo, sigue escribiendo los que falten. Quedan guardados sin clasificar — los clasificas de a uno después, desde la lista de peligros.</div>
+      <div id="pel-rapido-ayuda" style="margin-bottom:10px"></div>
       <div id="pel-rapido-chat"></div>
       <textarea id="pel-rapido-input" placeholder="Describe un peligro..." style="min-height:50px;margin-top:8px"></textarea>
+      <select id="pel-rapido-origen" style="margin-top:6px"><option value="">— ¿Herramienta o sustancia relacionada? (opcional) —</option></select>
       <button class="btn btn-orange" style="margin-top:8px" onclick="agregarPeligroRapido()"><i class="ti ti-plus"></i> Agregar y seguir</button>
       <button class="btn btn-sec" style="margin-top:8px" onclick="terminarModoRapido()"><i class="ti ti-check"></i> Terminar, volver a la lista</button>
     </div>
@@ -561,12 +565,14 @@ textarea{min-height:74px;resize:vertical}
     <div class="pel-step-q">Describe este peligro</div>
     <div class="pel-step-hint" id="pel-step2-src"></div>
     <textarea id="pel-desc" placeholder="Ej: al cargar el neumático puedo lesionarme la espalda..." style="min-height:80px"></textarea>
+    <label class="fl" style="margin-top:6px">¿Relacionado con una herramienta o sustancia? <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+    <select id="pel-desc-origen"><option value="">— Ninguna —</option></select>
     <div id="pel-ayuda-memoria"></div>
     <label class="fl" style="margin-top:8px">Foto del peligro (opcional)</label>
     <input type="file" id="pel-foto-input" accept="image/*" capture="environment" style="display:none" onchange="onFotoPeligro(this)">
     <button class="btn btn-sec" onclick="document.getElementById('pel-foto-input').click()"><i class="ti ti-camera"></i> Tomar foto</button>
     <div id="pel-foto-prev"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
+    <div class="pel-step-navrow" style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-sec" style="flex:1" onclick="pelStepGo(1)"><i class="ti ti-arrow-left"></i> Atrás</button>
       <button class="btn btn-orange" style="flex:1" onclick="pelStepGo(3)">Siguiente <i class="ti ti-arrow-right"></i></button>
     </div>
@@ -577,7 +583,7 @@ textarea{min-height:74px;resize:vertical}
     <div class="pel-step-q">¿Agrava a población sensible?</div>
     <div class="pel-step-hint">Opcional. Marca las condiciones que hacen este peligro más grave.</div>
     <div id="pel-sens-list"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
+    <div class="pel-step-navrow" style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-sec" style="flex:1" onclick="pelStepGo(2)"><i class="ti ti-arrow-left"></i> Atrás</button>
       <button class="btn btn-orange" style="flex:1" onclick="pelStepGo(4)">Siguiente <i class="ti ti-arrow-right"></i></button>
     </div>
@@ -590,10 +596,14 @@ textarea{min-height:74px;resize:vertical}
     <textarea id="pel-control-sug" placeholder="Ej: que usemos el carro para trasladar el neumático..." style="min-height:60px"></textarea>
     <label class="fl">Jerarquía de esa medida (opcional)</label>
     <div class="jer-row" id="pel-jerarquia-sug"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
+    <div class="pel-step-navrow" style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-sec" style="flex:1" onclick="pelStepGo(3)"><i class="ti ti-arrow-left"></i> Atrás</button>
       <button class="btn btn-orange" style="flex:1" onclick="guardarPeligro()"><i class="ti ti-check"></i> Guardar</button>
     </div>
+  </div>
+  <div id="pel-edicion-guardar-row" style="display:none;gap:8px;margin-top:14px">
+    <button class="btn btn-sec" style="flex:1" onclick="gt('s-peligros')"><i class="ti ti-x"></i> Cancelar</button>
+    <button class="btn btn-orange" style="flex:1" onclick="guardarPeligro()"><i class="ti ti-check"></i> Guardar cambios</button>
   </div>
 </div>
 
@@ -601,6 +611,7 @@ textarea{min-height:74px;resize:vertical}
 <div id="s-gabinete" class="scr">
   <button class="btn-sm" id="gab-back" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Volver</button>
   <div class="page-title">Clasificación técnica</div>
+  <div class="page-sub" id="gab-tarea" style="font-weight:600;color:#333"></div>
   <div class="page-sub" id="gab-desc"></div>
 
   <div class="sec-div">CÓDIGO ISP (cascada)</div>
@@ -740,20 +751,43 @@ textarea{min-height:74px;resize:vertical}
   <button class="btn-sm" onclick="gt('s-home')" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Inicio</button>
   <div class="page-title">Seguimiento de controles</div>
   <div class="page-sub">Estado de las medidas a implementar, en todas las entrevistas</div>
+  <button class="btn btn-sec" style="margin-bottom:12px" onclick="exportarSeguimientoPDF()"><i class="ti ti-file-download"></i> Exportar reporte de seguimiento (PDF)</button>
   <div id="seg-filtros" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
     <div class="tog" id="segf-Todos" onclick="setFiltroSeg('Todos')">Todos</div>
     <div class="tog" id="segf-Pendiente" onclick="setFiltroSeg('Pendiente')">Pendientes</div>
+    <div class="tog" id="segf-En proceso" onclick="setFiltroSeg('En proceso')">En proceso</div>
     <div class="tog" id="segf-Ejecutado" onclick="setFiltroSeg('Ejecutado')">Ejecutados</div>
     <div class="tog" id="segf-Verificado" onclick="setFiltroSeg('Verificado')">Verificados</div>
   </div>
   <div id="seguimiento-list"></div>
+  <input type="file" id="control-foto-input" accept="image/*" capture="environment" style="display:none" onchange="onFotoControl(this)">
+</div>
+
+<div id="s-suspel-edit" class="scr">
+  <button class="btn-sm" onclick="gt('s-catalogos'); catTab('suspel')" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Volver a Sustancias</button>
+  <div class="page-title">Ficha de la sustancia</div>
+  <label class="fl">Nombre</label>
+  <input type="text" id="se-nombre">
+  <label class="fl">Vías de exposición</label>
+  <textarea id="se-vias" style="min-height:60px"></textarea>
+  <label class="fl">Consecuencias / efectos en la salud</label>
+  <textarea id="se-consecuencias" style="min-height:60px"></textarea>
+  <label class="fl">Almacenamiento</label>
+  <textarea id="se-almacenamiento" style="min-height:60px"></textarea>
+  <label class="fl">Incompatibilidad</label>
+  <textarea id="se-incompatibilidad" style="min-height:60px"></textarea>
+  <label class="fl">Medidas / EPP recomendado</label>
+  <textarea id="se-medidas" style="min-height:60px"></textarea>
+  <label class="fl">EPP específico (opcional, separado por coma)</label>
+  <input type="text" id="se-epp" placeholder="Ej: Guantes de nitrilo, antiparras químicas">
+  <button class="btn btn-orange" style="margin-top:16px" onclick="guardarSuspelEdit()"><i class="ti ti-device-floppy"></i> Guardar ficha</button>
 </div>
 
 </div>
 
 <script>
 // ═══════════════ CATÁLOGOS EMBEBIDOS ═══════════════
-const CASCADA = {"Riesgos de Seguridad": {"Caída de personas": [{"riesgo": "Caídas al mismo nivel", "codigo": "A1", "definicion": "Caída que se produce en el mismo plano de sustentación, por ejemplo: caídas en lugares de tránsito o superficies de trabajo, caídas sobre o contra objetos. Ej. aeronáutico: trabajo en hangar con derrames de fluidos hidráulicos, mangueras en el piso.", "fuente": "Superficies mojadas, irregulares o con obstáculos; iluminación deficiente; cables en el piso; calzado inadecuado", "mecanismo": "Pérdida de equilibrio → impacto del cuerpo contra el suelo u objetos fijos | Contexto carga/logística: En rampa: tropiezos con eslingas, redes de carga o pallets mal ubicados en zona de tránsito.", "consecuencia": "Contusiones, esguinces, fracturas de muñeca y cadera, TEC, heridas"}, {"riesgo": "Caídas a distinto nivel", "codigo": "A2", "definicion": "Caída a un plano inferior de sustentación desde una altura no superior a 1,8 mts, (incluye caídas en profundidades no mayores a 1,8 mts. en excavaciones, agujeros, zanjas, etc). Ej. aeronáutico: caída desde escalerilla de acceso a cabina o desde plataforma baja de servicio.", "fuente": "Escaleras en mal estado, rampas sin pasamanos, desniveles no señalizados, plataformas sin borde de protección", "mecanismo": "Pérdida de equilibrio o pisada en falso en desnivel → caída a nivel inferior | Contexto carga/logística: Caída desde plataforma de camión de carga o desde el borde de la bodega de la aeronave al andén.", "consecuencia": "Fracturas, esguinces, TEC leve a moderado, contusiones, lumbalgia"}, {"riesgo": "Caídas de altura", "codigo": "A3", "definicion": "Caída a un plano inferior de sustentación, desde una altura superior a 1,8 mts. Caídas desde alturas (incluye caídas en profundidades mayores a 1,8 mts.). Ej. aeronáutico: trabajo sobre alas, estabilizadores o fuselaje superior sin protección de altura.", "fuente": "Andamios, escaleras de mano, techos, plataformas elevadas, bordes sin baranda, trabajo en altura sin arnés", "mecanismo": "Pérdida de sujeción o equilibrio en estructura elevada → caída libre o frenada | Contexto carga/logística: Caída durante carga en aeronaves de fuselaje alto o desde plataformas elevadoras de contenedores.", "consecuencia": "Fracturas múltiples, TEC grave, politraumatismo, muerte"}, {"riesgo": "Caídas al agua", "codigo": "A4", "definicion": "Caída a un curso de agua natural, o bien al interior de una estructura que contiene agua.", "fuente": "Muelles, embarcaciones, bordes de canales o piscinas sin protección", "mecanismo": "Pérdida de equilibrio en borde adyacente a cuerpo de agua", "consecuencia": "Ahogamiento, hipotermia, traumatismo por impacto, muerte"}], "Contacto con objetos": [{"riesgo": "Atrapamiento", "codigo": "B1", "definicion": "Enganche o aprisionamiento del cuerpo, o parte de éste, por mecanismos de las máquinas, objetos, piezas, materiales, equipos o vehículos que han perdido su estabilidad. Ej. aeronáutico: atrapamiento en superficies de control móviles (flaps, timón) o tren de aterrizaje.", "fuente": "Maquinaria sin guardas, cintas transportadoras, engranajes, prensas, rodillos", "mecanismo": "Enganche de extremidad o ropa en mecanismo en movimiento → tracción o compresión progresiva | Contexto carga/logística: Atrapamiento entre unit load devices (ULD), pallets o por la cinta transportadora de equipaje.", "consecuencia": "Aplastamiento, amputación, fractura, avulsión de tejidos, muerte"}, {"riesgo": "Caída de objetos", "codigo": "B2", "definicion": "Caída de elementos que golpean al cuerpo, por ejemplo, materiales, herramientas, estructuras, etc. Ej. aeronáutico: caída de herramientas o componentes durante mantenimiento en altura sobre el avión.", "fuente": "Materiales mal apilados, herramientas sin seguro en altura, izaje sin zona de exclusión", "mecanismo": "Objeto pierde soporte desde altura → impacto sobre persona | Contexto carga/logística: Caída de bultos o mercancía mal estibada desde altura durante la carga/descarga por encargo.", "consecuencia": "TEC, fracturas, contusiones, muerte"}, {"riesgo": "Cortes por objetos / herramientas corto-punzantes", "codigo": "B3", "definicion": "Cortes y/o punzaciones generadas en parte del cuerpo debido al contacto de éste con objetos cortantes, punzantes y/o abrasivos. Ej. aeronáutico: corte con bordes de chapa metálica del fuselaje, remaches o herramientas de corte.", "fuente": "Herramientas cortantes (cuchillos, sierras, cúter), bordes filosos de metal o vidrio, agujas", "mecanismo": "Contacto directo del cuerpo con borde o punta cortante bajo presión o movimiento | Contexto carga/logística: Corte al abrir zunchos, flejes metálicos o embalajes de encomiendas.", "consecuencia": "Heridas cortantes, laceraciones, perforaciones, hemorragia, infección"}, {"riesgo": "Choque contra objetos", "codigo": "B4", "definicion": "Encuentro violento del cuerpo, o de una parte de éste, con uno o varios objetos, estén éstos en movimiento o no. Ej. aeronáutico: choque contra estabilizadores, antenas o pitot durante desplazamiento bajo el avión.", "fuente": "Estructuras fijas, puertas, estanterías, equipos en movimiento, vehículos internos", "mecanismo": "Desplazamiento del cuerpo o del objeto hasta producir impacto", "consecuencia": "Contusiones, heridas, TEC, fracturas"}], "Contacto con seres vivos": [{"riesgo": "Contacto con personas", "codigo": "C1", "definicion": "Lesiones recibidas en el cuerpo, o parte de éste (agresiones, patadas, mordiscos, etc.) debido a la acción de otras personas.", "fuente": "Entornos con usuarios en crisis o violentos (salud, comercio, transporte), conflictos laborales", "mecanismo": "Agresión directa: golpe, empujón, mordedura, forcejeo", "consecuencia": "Contusiones, heridas, fracturas, TEC, trauma psicológico"}, {"riesgo": "Contacto con animales y/o insectos", "codigo": "C2", "definicion": "Lesiones recibidas en el cuerpo, o parte de éste (arañazos, patadas, mordiscos, etc.) debido a la interacción con animales y/o insectos.", "fuente": "Trabajo agrícola, ganadero, veterinario, rural; fauna silvestre", "mecanismo": "Mordedura, picadura, patada, arañazo, cornada | Contexto carga/logística: Contacto con animales o plagas en mercancía perecible o en bases remotas.", "consecuencia": "Heridas, infección, anafilaxia, rabia, intoxicación por veneno"}], "Contactos térmicos": [{"riesgo": "Contactos térmicos por calor", "codigo": "E1", "definicion": "Acción y efecto de hacer contacto físico con superficies o productos calientes. Ej. aeronáutico: contacto con motores, sistemas de escape o frenos recién operados (altas temperaturas).", "fuente": "Hornos, vapores, llamas, equipos de soldadura, fluidos calientes, superficies radiantes", "mecanismo": "Transferencia de calor por conducción, convección o radiación → daño tisular por temperatura", "consecuencia": "Quemaduras de 1°, 2° y 3° grado, ampollas, necrosis tisular"}, {"riesgo": "Contactos térmicos por frío", "codigo": "E2", "definicion": "Acción y efecto de hacer contacto físico con superficies o productos fríos. Ej. aeronáutico: manipulación de nitrógeno líquido o componentes a muy baja temperatura.", "fuente": "Superficies criogénicas, cámaras de frío, gases a baja temperatura", "mecanismo": "Transferencia de calor desde el cuerpo hacia la superficie → daño tisular por congelación local", "consecuencia": "Quemaduras por frío, congelamiento, crioadherencia"}], "Contacto con energía eléctrica": [{"riesgo": "Contactos eléctricos directos baja tensión", "codigo": "F1", "definicion": "Es todo contacto directo de las personas con partes activas en tensión (trabajando con tensiones menores a 1000 volts). Ej. aeronáutico: contacto con sistemas eléctricos de aeronave energizados (baja tensión).", "fuente": "Tableros sin protección, cables pelados, equipos defectuosos, trabajos en instalaciones energizadas", "mecanismo": "Paso de corriente a través del cuerpo entre punto de contacto y tierra", "consecuencia": "Tetanización muscular, quemaduras internas y externas, fibrilación ventricular, paro cardiaco, muerte"}, {"riesgo": "Contactos eléctricos directos alta tensión", "codigo": "F2", "definicion": "Es todo contacto directo de las personas con partes activas en tensión (trabajando con tensiones mayores a 1000 volts).", "fuente": "Líneas de alta tensión, subestaciones, transformadores", "mecanismo": "Arco eléctrico o contacto directo → corriente de alta intensidad a través del cuerpo", "consecuencia": "Quemaduras graves internas/externas, explosión por arco, paro cardiorrespiratorio, muerte"}, {"riesgo": "Contactos eléctricos indirectos baja tensión", "codigo": "F3", "definicion": "Es todo contacto de las personas con masas puestas accidentalmente en tensión (trabajando con tensiones menores a 1000 volts).", "fuente": "Falla de aislamiento, ausencia de puesta a tierra, equipos con falla de aislación", "mecanismo": "Contacto con superficie no prevista en tensión → paso de corriente", "consecuencia": "Descarga, quemaduras, paro cardiaco"}, {"riesgo": "Contactos eléctricos indirectos alta tensión", "codigo": "F4", "definicion": "Es todo contacto de las personas con masas puestas accidentalmente en tensión (trabajando con tensiones mayores a 1000 volts).", "fuente": "Igual que F3 pero en instalaciones de alta tensión", "mecanismo": "Igual que F3 con mayor magnitud de corriente", "consecuencia": "Quemaduras graves, paro cardiorrespiratorio, muerte"}], "Contacto con sustancias químicas": [{"riesgo": "Contacto con sustancias cáusticas y/o corrosivas (vía dérmica)", "codigo": "G1", "definicion": "Acción y efecto de tocar sustancias y productos cáusticos y/o corrosivos que puedan producir reacciones alérgicas y/o lesiones externas en la piel", "fuente": "Ácidos (sulfúrico, clorhídrico), bases fuertes (soda cáustica, amoníaco), agentes oxidantes", "mecanismo": "Reacción química con tejidos → desnaturalización proteica o saponificación de lípidos", "consecuencia": "Quemaduras químicas, lesiones oculares, ulceración de piel y mucosas, ceguera"}, {"riesgo": "Contacto con otras sustancias químicas", "codigo": "G2", "definicion": "Acción y efecto de tocar sustancias y productos sin efectos cáusticos y/o corrosivos que puedan producir reacciones alérgicas y/o lesiones externas en la piel", "fuente": "Solventes, pinturas, aceites, detergentes, plaguicidas", "mecanismo": "Absorción dérmica o contacto directo → reacción inflamatoria o sensibilización | Contexto carga/logística: Contacto con sustancias de encomiendas mal declaradas o con fugas durante el transporte de carga.", "consecuencia": "Dermatitis de contacto, eccema, irritación cutánea, alergia"}], "Contacto con elementos que se proyectan": [{"riesgo": "Explosiones", "codigo": "H1", "definicion": "Liberación brusca de gran cantidad de energía que produce un incremento violento y rápido de la presión, con desprendimiento de calor, luz y gases, teniendo su origen en transformaciones químicas y/o físicas. Ej. aeronáutico: explosión por vapores de combustible de aviación (Jet A1) en espacios mal ventilados.", "fuente": "Gas a presión, polvos explosivos, mezclas inflamables, tanques presurizados, reacciones exotérmicas", "mecanismo": "Liberación explosiva de energía → onda de presión, proyección de fragmentos, calor intenso", "consecuencia": "Barotrauma, quemaduras, proyección, politraumatismo, muerte"}, {"riesgo": "Proyección de fragmentos y/o partículas", "codigo": "H2", "definicion": "Contacto violento del cuerpo, o una parte de éste, con elementos proyectados como: piezas, fragmentos, partículas o líquido. Ej. aeronáutico: proyección de partículas al esmerilar, remachar o usar aire comprimido.", "fuente": "Esmeril, amoladora, sierra, tornos, trabajos de corte y mecanizado", "mecanismo": "Fragmento proyectado a alta velocidad → impacto puntual en tejidos", "consecuencia": "Heridas penetrantes, lesiones oculares graves, cuerpo extraño incrustado"}], "Contacto con / en vehículos en movimiento": [{"riesgo": "Atropellos o golpes con vehículos", "codigo": "I1", "definicion": "Impacto entre un peatón y un vehículo en movimiento. Ej. aeronáutico: atropello por vehículos de rampa (tractores de remolque, carros de equipaje, GPU).", "fuente": "Vehículos internos (montacargas, camiones), trabajo en vías públicas, señalización insuficiente", "mecanismo": "Impacto del vehículo en movimiento sobre persona | Contexto carga/logística: Atropello por tractores de remolque, dollies o vehículos de rampa durante operación de carga.", "consecuencia": "Fracturas múltiples, aplastamiento, TEC, politraumatismo, muerte"}, {"riesgo": "Choque, colisión o volcamiento", "codigo": "I2", "definicion": "Lesiones generadas en el cuerpo de un conductor o pasajero de un vehículo cuando éste se vuelca o impacta con otro vehículo y/o estructura externa. Ej. aeronáutico: colisión de vehículos de apoyo en tierra en plataforma.", "fuente": "Conducción de vehículos, fatiga, velocidad excesiva, condición de la ruta, distracción", "mecanismo": "Impacto del vehículo contra otro vehículo o estructura → fuerzas de desaceleración bruscas | Contexto carga/logística: Colisión de carros de carga o transpaletas en el andén o al aproximarse a la aeronave.", "consecuencia": "Fracturas, TEC, lesiones por proyección interna, muerte"}, {"riesgo": "Incendios", "codigo": "J", "definicion": "Conjunto de condiciones (combustibles, comburentes y fuentes de ignición) cuya conjunción en un momento determinado, pueden originar un fuego incontrolado. Sus efectos son generalmente no deseados, produciendo lesiones personales por el humo (gases tóxicos y altas temperaturas) y daños materiales. Ej. aeronáutico: incendio por combustible de aviación, fluidos inflamables o fuentes de ignición en hangar.", "fuente": "Combustibles, fuentes de ignición (chispas, llamas, superficies calientes), acumulación de material inflamable", "mecanismo": "Combustión no controlada → exposición a llamas, humo y gases tóxicos (CO)", "consecuencia": "Quemaduras, intoxicación por CO, asfixia, muerte"}], "Exposición a condiciones atmosféricas extremas": [{"riesgo": "Exposición a ambientes con deficiencia de oxígeno", "codigo": "K1", "definicion": "Exposición de un trabajador a una atmosfera con déficit de oxígeno (concentración de oxígeno inferior al 19,5% en el aire), a presión atmosférica normal. Ej. aeronáutico: trabajo en interior de estanques de combustible (espacio confinado, deficiencia O2).", "fuente": "Espacios confinados (tanques, silos, pozos), atmósferas desplazadas por gases inertes o CO₂", "mecanismo": "Concentración insuficiente de O₂ → hipoxia celular progresiva | Contexto carga/logística: Deficiencia de oxígeno al ingresar a bodega de carga cerrada o contenedor sellado en base remota.", "consecuencia": "Mareo, pérdida de conciencia, hipoxia, muerte"}, {"riesgo": "Exposición a sustancias químicas tóxicas", "codigo": "K2", "definicion": "Exposición de un trabajador a una atmosfera con altas concentraciones de químicos provenientes principalmente de la descomposición de materia orgánica (ácido sulfhídrico, monóxido de carbono, anhídrido carbónico, amoníaco, etc.). Ej. aeronáutico: exposición a vapores de combustible en estanques o zonas confinadas.", "fuente": "Descomposición de materia orgánica (H₂S), CO de motores, emanaciones industriales", "mecanismo": "Inhalación del agente tóxico → absorción pulmonar → distribución sistémica", "consecuencia": "Intoxicación aguda, daño neurológico, fallo multiorgánico, muerte"}], "Exposición a altos niveles de radiación": [{"riesgo": "Exposición a radiaciones no ionizantes", "codigo": "L1", "definicion": "Exposición de un trabajador a altas dosis de radiaciones no ionizantes (ultravioleta (UV), láser, Infrarroja (IR), microondas, radiofrecuencias, campos de frecuencia extremadamente baja (ELF)), entendiendo dicha exposición como accidente. Ej. aeronáutico: radiación UV en trabajos exteriores en plataforma; ensayos no destructivos.", "fuente": "Arco de soldadura, láser industrial, UV intensa, equipos de radiofrecuencia de alta potencia", "mecanismo": "Absorción de energía electromagnética → daño térmico o fotoquímico agudo", "consecuencia": "Quemaduras retinianas, fotoqueratitis, eritema, daño tisular localizado"}, {"riesgo": "Exposición a radiaciones ionizantes", "codigo": "L2", "definicion": "Exposición de un trabajador a altas dosis de radiaciones ionizantes (rayos X, rayos gamma), entendiendo dicha exposición como accidente.", "fuente": "Fuentes radiactivas industriales sin protección, gammagrafía, instalaciones nucleares en falla", "mecanismo": "Ionización masiva de tejidos → ruptura de ADN y daño celular directo", "consecuencia": "Síndrome de irradiación aguda, radiodermitis, muerte celular, muerte"}, {"riesgo": "Ingesta de sustancia nocivas", "codigo": "M", "definicion": "Ingesta de sustancias nocivas que puedan alterar la salud de un trabajador (alimentos en mal estado, venenos, sustancias químicas, etc.).", "fuente": "Alimentos contaminados, sustancias químicas sin identificar, plaguicidas, venenos", "mecanismo": "Absorción gastrointestinal del tóxico → distribución sistémica | Contexto carga/logística: Ingesta accidental por contaminación cruzada en manipulación de mercancías peligrosas transportadas por encargo.", "consecuencia": "Intoxicación aguda, daño hepático y renal, convulsiones, muerte"}, {"riesgo": "Otros riesgos", "codigo": "N", "definicion": "Son aquellos riesgos de accidente que, a juicio del evaluador, no han sido descritos en ninguno de los ítemes anteriores.", "fuente": "Específico del contexto de evaluación", "mecanismo": "Variable según el riesgo identificado", "consecuencia": "Variable según el riesgo identificado"}]}, "Riesgos Higiénicos": {"Exposición a agentes químicos": [{"riesgo": "Exposición a aerosoles sólidos", "codigo": "O1", "definicion": "Permanencia en un ambiente de trabajo con presencia de partículas sólidas en suspensión como polvos, fibras y humos. (Sílice, polvo de harina, fibras, humos de soldadura, etc.) Ej. aeronáutico: inhalación de polvo de lijado de pintura, fibra de carbono o composites.", "fuente": "Sílice libre, amianto, polvo de harina, humos de soldadura, polvo de madera", "mecanismo": "Inhalación → depósito en vías respiratorias → inflamación crónica o fibrosis pulmonar", "consecuencia": "Silicosis, asbestosis, EPOC, neumoconiosis, cáncer pulmonar"}, {"riesgo": "Exposición a aerosoles líquidos", "codigo": "O2", "definicion": "Permanencia en un ambiente de trabajo con presencia de partículas líquidas en suspensión como nieblas y rocíos. (nieblas de ácidos, plaguicidas, etc.)", "fuente": "Rociado de plaguicidas, ácidos, pinturas en spray, lubricantes", "mecanismo": "Inhalación de partículas líquidas → absorción pulmonar y sistémica", "consecuencia": "Irritación respiratoria, bronquitis, neumonitis química, intoxicación sistémica"}, {"riesgo": "Exposición a gases y vapores", "codigo": "O3", "definicion": "Permanencia en un ambiente de trabajo con presencia de sustancias en estado gaseoso (gases o vapores), tales como: gases anestésicos, acetonas, tolueno, benceno, xileno, etc. Ej. aeronáutico: vapores de solventes, desengrasantes y selladores aeronáuticos (Skydrol, PR).", "fuente": "Solventes (tolueno, xileno, benceno), gases anestésicos, acetona, CO", "mecanismo": "Inhalación → absorción pulmonar → distribución sistémica", "consecuencia": "Narcosis, hepatotoxicidad, nefrotoxicidad, carcinogénesis, asfixia"}], "Exposición a agentes físicos": [{"riesgo": "Exposición a ruido", "codigo": "P1", "definicion": "Permanencia en un ambiente de trabajo con presencia continua de altos niveles de presión sonora (en forma estable o fluctuante), con la potencialidad de alterar el órgano de la audición. Ej. aeronáutico: ruido de motores en prueba, APU, herramientas neumáticas en plataforma.", "fuente": "Maquinaria industrial, herramientas neumáticas, motores, compresores, generadores", "mecanismo": "Vibración coclear crónica → daño progresivo de células ciliadas del órgano de Corti | Contexto carga/logística: Ruido de motores/APU en rampa durante carga con aeronave en operación.", "consecuencia": "Hipoacusia neurosensorial, tinnitus, estrés, accidentes por pérdida de señal auditiva"}, {"riesgo": "Exposición a vibraciones (cuerpo completo)", "codigo": "P2", "definicion": "Permanencia en un ambiente de trabajo con presencia de energía vibratoria que se transfiere al cuerpo humano en formal global (cuerpo completo), el cual actúa como receptor de energía mecánica.", "fuente": "Conducción de vehículos todoterreno, maquinaria pesada, equipo ferroviario", "mecanismo": "Transmisión de vibración al esqueleto axial y órganos → microtraumas repetitivos", "consecuencia": "Lumbalgia crónica, hernia discal, daño vascular sistémico"}, {"riesgo": "Exposición a vibraciones (mano-brazo)", "codigo": "P3", "definicion": "Permanencia en un ambiente de trabajo con presencia de energía vibratoria que se transfiere al componente mano-brazo. Ej. aeronáutico: vibración mano-brazo por uso prolongado de llave de impacto o remachadora.", "fuente": "Herramientas vibrantes (martillo neumático, esmeril, motosierra, taladro)", "mecanismo": "Transmisión de vibración al sistema neurovascular periférico del segmento mano-brazo", "consecuencia": "Síndrome de vibración mano-brazo, fenómeno de Raynaud, neuropatía periférica"}, {"riesgo": "Exposición a radiaciones ionizantes", "codigo": "P4", "definicion": "Permanencia en un ambiente de trabajo con presencia de radiaciones electromagnéticas capaces de producir la ionización de manera directa o indirecta, en su paso a través de la materia (Rayos X, Rayos Gamma, provenientes de generadores o fuentes; entre otras)", "fuente": "Fuentes radiactivas industriales, gammagrafía, radioterapia", "mecanismo": "Ionización celular acumulativa → daño progresivo de ADN en ciclos de exposición", "consecuencia": "Cáncer (leucemia, tiroides, pulmón), cataratas, infertilidad"}, {"riesgo": "Exposición a radiaciones no ionizantes", "codigo": "P5", "definicion": "Permanencia en un ambiente de trabajo con presencia de radiaciones electromagnéticas incapaces de producir ionización de manera directa o indirecta a su paso a través de la materia (Rayos visibles, UV de fuentes naturales o artificiales, Laser, Microondas, entre otros)", "fuente": "Soldadura (UV), exposición solar prolongada, pantallas, microondas, láser de baja potencia", "mecanismo": "Absorción energética crónica → daño fotoquímico o térmico acumulativo", "consecuencia": "Cáncer de piel, cataratas, fotoqueratitis, lesiones retinianas"}, {"riesgo": "Exposición a calor", "codigo": "P6", "definicion": "Permanencia en un ambiente de trabajo a altas temperaturas, las cuales pueden generar un aumento de la temperatura corporal interna del trabajador sobre los 38°C.", "fuente": "Hornos industriales, trabajo a la intemperie en verano, fuentes de calor radiante", "mecanismo": "Carga térmica supera la capacidad de termorregulación → hipertermia sistémica | Contexto carga/logística: Exposición a calor en faenas de carga en bases remotas del norte sin sombra ni climatización.", "consecuencia": "Golpe de calor, deshidratación, síncope térmico, calambres, muerte"}, {"riesgo": "Exposición a frío", "codigo": "P7", "definicion": "Permanencia en un ambiente de trabajo a bajas temperaturas, las cuales pueden generar una disminución de la temperatura corporal interna del trabajador bajo los 36°C.", "fuente": "Cámaras frigoríficas, intemperie en invierno, trabajo en zonas frías (crítico en Punta Arenas)", "mecanismo": "Pérdida de calor corporal mayor que la producción → hipotermia o vasoconstricción periférica | Contexto carga/logística: Exposición a frío extremo en operación de rampa en bases australes (Punta Arenas, zonas remotas).", "consecuencia": "Hipotermia, congelamiento de extremidades, pie de trinchera, muerte"}, {"riesgo": "Exposición a altas presiones", "codigo": "P8", "definicion": "Permanencia en un ambiente de trabajo a presiones superiores a la atmosférica (actividades bajo el nivel del mar (buceo), cámaras hiperbáricas, etc.).", "fuente": "Buceo, cámaras hiperbáricas, trabajo bajo nivel del mar", "mecanismo": "Aumento de presión → cambios en solubilidad de gases en sangre y tejidos", "consecuencia": "Enfermedad descompresiva, barotrauma, narcosis por nitrógeno"}, {"riesgo": "Exposición a bajas presiones", "codigo": "P9", "definicion": "Permanencia en un ambiente de trabajo a presiones inferiores a la atmosférica (trabajos a partir de los 3.000 m.s.n.m. (altitud geográfica).", "fuente": "Trabajo en altura geográfica > 3.000 msnm", "mecanismo": "Reducción de presión parcial de O₂ → hipoxia hipobárica progresiva | Contexto carga/logística: Exposición a baja presión/altitud en abastecimiento de bases en zonas de gran altitud geográfica.", "consecuencia": "Mal de altura agudo, edema pulmonar de altura, policitemia, hipobaria crónica"}], "Exposición a agentes biológicos": [{"riesgo": "Transmisión por fluidos corporales", "codigo": "Q1", "definicion": "Se entiende por fluido corporal a todas las secreciones o líquidos biológicos, fisiológicos o patológicos, que se producen en el organismo, tanto de bajo riesgo (deposiciones, secreciones nasales, expectoración, transpiración, lágrimas, orina o vómitos a excepción que contengan sangre visible) y de alto riesgo (se aplican siempre a la sangre y a todos los fluidos que contengan sangre visible, los que por la vía parenteral, pueden transmitir Virus de Hepatitis B, Virus de Hepatitis C, VIH, y otros agentes)", "fuente": "Sector salud, residuos hospitalarios, pinchazos con material cortopunzante contaminado", "mecanismo": "Inoculación o contacto de fluido infeccioso con mucosas o piel no íntegra", "consecuencia": "VIH, Hepatitis B y C, otras infecciones de transmisión sanguínea"}, {"riesgo": "Transmisión por inhalación dermal, oral y parenteral", "codigo": "Q2", "definicion": "Exposición a virus, bacterias, parásitos, etc., por inhalación dermal, oral y parenteral, la cual puede afectar la salud de una persona trabajadora generando enfermedades infecciosas y parasitarias agudas o crónicas.", "fuente": "Sector salud, aguas residuales, residuos sólidos, contacto con animales", "mecanismo": "Inhalación, ingestión o contacto dérmico con microorganismos → infección sistémica", "consecuencia": "Tuberculosis, leptospirosis, brucelosis, enfermedades parasitarias, infecciones oportunistas"}]}, "Riesgos Musculo Esqueléticos": {"Manejo manual de carga": [{"riesgo": "Sobrecarga física debido a manipulación manual de carga", "codigo": "R1", "definicion": "Trabajos en donde se deban levantar, descender o transportar manualmente objetos de más de 3 kilos. Trabajos en donde se deban empujar o arrastrar objetos utilizando 1 o 2 manos. Ej. aeronáutico: manipulación manual de neumáticos de aeronave (~40 kg), baterías, componentes pesados.", "fuente": "Cargas pesadas, frecuencia elevada, distancias largas, posturas inadecuadas durante el manejo", "mecanismo": "Sobresolicitación del sistema musculoesquelético → microlesiones acumulativas en columna y extremidades | Contexto carga/logística: Manipulación manual de bultos y encomiendas de peso variable en recepción y estiba, especialmente sin ayuda mecánica en bases remotas.", "consecuencia": "Lumbalgia, hernia discal, lesiones de hombro, contracturas musculares"}, {"riesgo": "Sobrecarga física debido a manipulación de personas / pacientes", "codigo": "R2", "definicion": "Trabajos en donde se deba realizar manejo manual de pacientes. Corresponde a actividades en donde se requiera fuerza para empujar, tirar, levantar, descender, transferir o de alguna manera mover o sostener una persona o parte del cuerpo de una persona que no sea autovalente, ya sea que se realice con o sin dispositivos de asistencia.", "fuente": "Movilización, transferencia e higiene de pacientes en sector salud u hogares de adulto mayor", "mecanismo": "Fuerzas elevadas e imprevisibles sobre columna y extremidades → microtraumas progresivos", "consecuencia": "Lumbalgia, lesiones de columna cervical y lumbar, trastornos musculoesqueléticos crónicos"}], "Trabajo repetitivo de la extremidad superior": [{"riesgo": "Sobrecarga física debido al trabajo repetitivo de extremidades superiores", "codigo": "S1", "definicion": "Tarea donde se involucra los miembros superiores (hombro, brazo, antebrazo, mano), caracterizada por tareas durante las cuales las mismas acciones de trabajo son repetidas por más del 50% de la duración de éstas, y/o el tiempo de ciclo es inferior a 30 segundos, y con una duración total de una hora o más durante la jornada laboral y con un tiempo total de 5 o más horas a la semana. Ej. aeronáutico: trabajo repetitivo de remachado o atornillado en líneas de ensamblaje.", "fuente": "Líneas de producción, digitación prolongada, ensamblaje manual, uso de herramientas manuales", "mecanismo": "Contracción muscular repetitiva → acumulación de microlesiones tendinosas y neurovasculares", "consecuencia": "Tendinitis, epicondilitis, síndrome del túnel carpiano, síndrome de De Quervain"}], "Sobrecarga postural": [{"riesgo": "Sobrecarga postural debido al trabajo de pie", "codigo": "T1", "definicion": "Trabajo en posición bípeda permanente con escasa opción de alternancia postural (Ej. Temporeras, laboratoristas, puestos en líneas de proceso, etc.)", "fuente": "Cajeras, operadores de línea, vendedores, manufactureros en cadena", "mecanismo": "Carga estática sostenida sobre miembros inferiores y columna sin variación postural", "consecuencia": "Várices, dolor lumbar, fatiga de piernas, fascitis plantar, pie plano"}, {"riesgo": "Sobrecarga postural debido al trabajo sentado", "codigo": "T2", "definicion": "Trabajo en posición sentado mantenido por períodos prolongados con escasa opción de alternancia postural (ej. puestos administrativos, uso de prolongado de pantallas de visualización de datos o PVD, camioneros, operador de maquinaria, conductores de locomoción publica, otros)", "fuente": "Trabajo administrativo, conductores, operadores de pantallas, call center", "mecanismo": "Compresión discal lumbar mantenida, reducción de circulación periférica en extremidades inferiores", "consecuencia": "Lumbalgia, hernia discal, trombosis venosa profunda, síndrome compartimental"}, {"riesgo": "Sobrecarga postural debido a trabajo en cuclillas", "codigo": "T3", "definicion": "Trabajo que implica flexionar (doblar) las rodillas al máximo y sostener esta posición durante tiempos prolongados (ej. mecánicos, electricistas, mucamas, etc.) Ej. aeronáutico: trabajo en cuclillas bajo el fuselaje o en tren de aterrizaje.", "fuente": "Mecánicos, electricistas, trabajadores de mantención en espacios confinados", "mecanismo": "Compresión de estructuras articulares de rodilla en posición de máxima flexión", "consecuencia": "Bursitis, meniscopatía, condromalacia rotuliana, lesiones ligamentosas"}, {"riesgo": "Sobrecarga postural debido a trabajo arrodillado", "codigo": "T4", "definicion": "Trabajo que implica apoyo (compresión) directa de las rodillas en forma sostenida (Ej. mecánicos de mantención, albañil, instaladores de piso, etc.). Ej. aeronáutico: trabajo arrodillado en inspección de superficies inferiores del avión.", "fuente": "Instaladores de piso, albañiles, mecánicos", "mecanismo": "Compresión directa de bursa prepatelar y estructuras periarticulares → inflamación crónica", "consecuencia": "Bursitis prepatelar, lesiones de meniscos, tendinitis rotuliana"}, {"riesgo": "Sobrecarga postural debido a tronco inclinado, en torsión o lateralización", "codigo": "T5", "definicion": "Trabajo con Posturas del tronco fuera del rango neutro o de confort; pudiendo incluir una o más de las siguientes situaciones: Trabajo con inclinación del tronco que se aleja del cuerpo (hacia adelante, o había atrás, habitualmente acompañado de piernas extendidas); Trabajo con torsión (rotación o giro) del tronco; Trabajo con lateralización del tronco (desviación lateral de la columna). Ej. aeronáutico: posturas forzadas de tronco al trabajar dentro de bahías o compartimentos.", "fuente": "Recolección, trabajo en zanjas, tareas con alcance adelantado prolongado", "mecanismo": "Carga biomecánica asimétrica sobre columna vertebral → compresión discal fuera del eje neutro | Contexto carga/logística: Postura forzada de tronco al estibar carga en espacios reducidos de bodega de aeronave.", "consecuencia": "Hernia discal, lumbalgia crónica, lumbociatalgia"}, {"riesgo": "Sobrecarga postural por flexión o extensión de la columna cervical", "codigo": "T6", "definicion": "Adopción de postura estática, en flexión o extensión del segmento cabeza – cuello, sin una pausa o variación postural que permita un adecuado descanso. Ejemplo (salas de control, uso de PVD en trabajo de oficina, etc.)", "fuente": "Uso prolongado de pantallas, cirujanos, dentistas, microscopistas", "mecanismo": "Carga sostenida sobre discos cervicales y musculatura posterior del cuello", "consecuencia": "Cervicobraquialgia, hernia discal cervical, cefalea tensional, dorsalgia alta"}, {"riesgo": "Sobrecarga postural debido a trabajo fuera del alcance funcional", "codigo": "T7", "definicion": "Trabajos que implican estiramiento, extensión, flexión, elevación, rotación o cualquier otro movimiento de extremidades (superiores e inferiores) producto de la operación de elementos que se encuentran fuera del alcance funcional. (Ej.: limpiador de vidrios, reponedor, carpinteros, pintores, mucamas, otros) Ej. aeronáutico: trabajo con brazos elevados en superficies superiores del avión fuera de alcance.", "fuente": "Reponedores, pintores, limpiadores de vidrios, trabajos de mantención en altura", "mecanismo": "Sobresolicitación de hombro y columna por trabajo con palancas biomecánicas desfavorables", "consecuencia": "Síndrome subacromial, tendinitis del manguito rotador, lumbalgia, bursitis de hombro"}], "Posturas estáticas": [{"riesgo": "Sobrecarga postural debido a actividad muscular estática", "codigo": "T8", "definicion": "Tareas con actividad muscular en posturas estáticas de cabeza/cuello, tronco, miembros superiores o inferiores, que se mantengan por más de 4 segundos consecutivamente. Corresponde a actividades en donde se aplica fuerza muscular y no se visualiza movimiento evidente de los segmentos del cuerpo, es decir las articulaciones se mantienen en su posición o hay mínimas variaciones", "fuente": "Trabajo de oficina, cirugía, microscopía, vigilancia con PVD", "mecanismo": "Contracción isométrica prolongada → isquemia muscular por compresión de capilares intramusculares", "consecuencia": "Fatiga muscular crónica, contracturas, cefalea tensional, dolores difusos"}]}, "Riesgos Psicosociales Laborales": {"Riesgos psicosociales": [{"riesgo": "Dimensión carga de trabajo (CT)", "codigo": "D1", "definicion": "La carga de trabajo son las exigencias que se le hacen a los trabajadores y trabajadoras para que cumplan con un determinado objetivo o tarea en un tiempo acotado o limitado. Es decir, en la carga de trabajo existe una relación entre la cantidad de tareas y el tiempo en que se deben realizar, que puede ser desde minutos hasta semanas o más.", "fuente": "Exceso de tareas, plazos cortos, multitarea simultánea, ritmo impuesto por máquina", "mecanismo": "Demanda cognitiva y temporal supera la capacidad de respuesta → activación crónica del estrés", "consecuencia": "Burnout, errores operativos, accidentes, trastornos del sueño, enfermedades cardiovasculares"}, {"riesgo": "Dimensión exigencias emocionales (EM)", "codigo": "D2", "definicion": "Las exigencias emocionales demandan nuestra capacidad para entender la situación de otras personas, sobre todo cuando esas personas sienten a su vez emociones intensas. Por ejemplo, la atención de víctimas de violencia o violación sexual, personas que pierden una persona querida, o que pierden su trabajo o han sufrido un accidente grave o amputación, o saben que tienen una enfermedad incurable, o adultos y niños en situación social crítica, o con problemas con la justicia.", "fuente": "Atención de usuarios en crisis, víctimas de violencia, trabajo clínico de alta complejidad emocional", "mecanismo": "Demanda sostenida de regulación emocional → agotamiento del recurso empático", "consecuencia": "Fatiga por compasión, burnout, depresión, trastorno de ansiedad, TEPT"}, {"riesgo": "Dimensión desarrollo profesional (DP)", "codigo": "D3", "definicion": "El desarrollo profesional es la oportunidad y el estímulo que ofrece el trabajo para que cada persona ponga en práctica los conocimientos y la experiencia que ya tiene, pero pueda también adquirir nuevos conocimientos y experiencia", "fuente": "Tareas rutinarias sin desarrollo, ausencia de capacitación, nula movilidad laboral", "mecanismo": "Frustración de expectativas de desarrollo → desmotivación crónica", "consecuencia": "Baja productividad, desmotivación, ausentismo, alta rotación"}, {"riesgo": "Dimensión reconocimiento y claridad de rol (CR)", "codigo": "D4", "definicion": "Esta dimensión o característica evalúa el reconocimiento, respeto y rectitud en el trato que recibimos en nuestro trabajo. También mide el sentido de las tareas que se realizan y la claridad de los límites de la responsabilidad que tenemos o que se nos asigna. La claridad de los roles asignados favorece el reconocimiento y el respeto.", "fuente": "Roles ambiguos, ausencia de retroalimentación, falta de reconocimiento explícito", "mecanismo": "Incertidumbre sobre expectativas → ansiedad y conflicto interno", "consecuencia": "Ansiedad, insatisfacción laboral, conflictos, errores por ambigüedad"}, {"riesgo": "Dimensión conflicto de rol (CR)", "codigo": "D5", "definicion": "En el trabajo, el rol es lo que se espera que una persona haga en el puesto que tiene asignado. El conflicto de rol evalúa la sensación de molestia personal ante el tipo de tareas que estamos obligados a hacer, especialmente cuando creemos que esas tareas son incongruentes entre sí, o que podrían hacerse de una manera diferente o cuando creemos que no nos corresponde realizarlas.", "fuente": "Órdenes contradictorias, tareas incompatibles con la función, exigencias éticas en tensión", "mecanismo": "Tensión entre demandas incompatibles → estrés de rol sostenido", "consecuencia": "Estrés, dificultad de concentración, errores, tensión emocional"}, {"riesgo": "Dimensión claridad de liderazgo (QL)", "codigo": "D6", "definicion": "La calidad del liderazgo es la forma en que se expresa el mando de una jefatura sobre nosotros. Incluye la capacidad de la jefatura de planificar el trabajo, resolver conflictos y colaborar para que los trabajadores/ as subordinados puedan llegar a completar su tarea.", "fuente": "Liderazgo autoritario, pasivo o inconsistente; falta de apoyo directivo", "mecanismo": "Clima laboral negativo → deterioro del bienestar psicológico y percepción de injusticia", "consecuencia": "Estrés, desmotivación, ausentismo, conflictos, baja cohesión de equipo"}, {"riesgo": "Dimensión compañerismo (CM)", "codigo": "D7", "definicion": "El compañerismo es la sensación de pertenecer a un equipo de trabajo conformado por pares, donde se recibe y se entrega ayuda cuando se necesita.", "fuente": "Clima fragmentado, competencia desleal, ausencia de apoyo horizontal", "mecanismo": "Aislamiento social laboral → reducción de recursos de afrontamiento ante el estrés", "consecuencia": "Estrés, ansiedad, conflictos interpersonales, ausentismo"}, {"riesgo": "Dimensión inseguridad en las condiciones de trabajo (IT)", "codigo": "D8", "definicion": "La inseguridad en las condiciones de trabajo es la sensación de que se nos puede cambiar de una manera más o menos arbitraria la forma en que trabajamos, o las tareas, los horarios, los lugares a los que estamos destinados.", "fuente": "Contratos precarios, amenaza de despido, cambios unilaterales de funciones u horarios", "mecanismo": "Incertidumbre laboral crónica → activación sostenida del eje del estrés", "consecuencia": "Ansiedad crónica, depresión, conductas de riesgo, absentismo"}, {"riesgo": "Dimensión equilibrio y trabajo y vida privada (CI)", "codigo": "D9", "definicion": "El equilibrio entre el trabajo y la vida privada es la manera en que estos dos ámbitos de nuestra vida nos permiten un desarrollo adecuado como personas, sin que una exigencia desmedida del trabajo interfiera con la vida privada.", "fuente": "Jornadas extensas, trabajo en horarios de descanso, demandas fuera de turno", "mecanismo": "Colonización del espacio personal por exigencias laborales → agotamiento global", "consecuencia": "Burnout, problemas familiares, baja productividad, trastornos del sueño"}, {"riesgo": "Dimensión confianza y justicia organizacional (CJ)", "codigo": "D10", "definicion": "La confianza y la justicia organizacional mide el grado de seguridad o confianza hacia la empresa o institución con el que los trabajadores/as afrontan sus tareas cotidianas. Esta seguridad se puede expresar de varias maneras, como confianza en los directivos, en los compañeros y compañeras de trabajo, en la solución justa de los conflictos y otras características similares.", "fuente": "Trato percibido como injusto, favoritismos, falta de transparencia en decisiones", "mecanismo": "Percepción de inequidad → resentimiento e internalización del agravio", "consecuencia": "Baja motivación, conductas contraproducentes, ausentismo, conflictos"}, {"riesgo": "Dimensión vulnerabilidad (VU)", "codigo": "D11", "definicion": "La vulnerabilidad en el trabajo es la sensación de temor, desprotección o indefensión ante un trato que el(la) trabajador(a) considera injusto por parte de la organización. Se puede entender también como la incapacidad de ejercer derechos o de resistir la disciplina que impone la relación laboral.", "fuente": "Relaciones de poder asimétricas, incapacidad percibida de resistir la disciplina o ejercer derechos", "mecanismo": "Inhibición de conductas de autocuidado y denuncia → exposición sostenida al riesgo", "consecuencia": "Ansiedad, estrés crónico, depresión, silenciamiento de riesgos"}, {"riesgo": "Dimensión violencia y acoso (VA)", "codigo": "D12", "definicion": "La violencia y el acoso en el trabajo es la exposición a conductas intimidatorias, ofensivas y no deseadas por las personas, que se relacionan con características de quien sufre dicha conducta tales como su apariencia física, género u orientación sexual, origen étnico, nacionalidad, creencias, etc.", "fuente": "Acoso laboral, acoso sexual, discriminación por género, origen étnico u orientación sexual", "mecanismo": "Exposición a conductas agresivas o denigrantes → trauma psicológico acumulativo", "consecuencia": "TEPT, depresión, ansiedad severa, ausentismo prolongado, deserción laboral"}]}};
+const CASCADA = {"Riesgos de Seguridad": {"Caída de personas": [{"riesgo": "Caídas al mismo nivel", "codigo": "A1", "definicion": "Caída que se produce en el mismo plano de sustentación, por ejemplo: caídas en lugares de tránsito o superficies de trabajo, caídas sobre o contra objetos. Ej. aeronáutico: trabajo en hangar con derrames de fluidos hidráulicos, mangueras en el piso.", "fuente": "Superficies mojadas, irregulares o con obstáculos; iluminación deficiente; cables en el piso; calzado inadecuado", "mecanismo": "Pérdida de equilibrio → impacto del cuerpo contra el suelo u objetos fijos | Contexto carga/logística: En rampa: tropiezos con eslingas, redes de carga o pallets mal ubicados en zona de tránsito.", "consecuencia": "Contusiones, esguinces, fracturas de muñeca y cadera, TEC, heridas"}, {"riesgo": "Caídas a distinto nivel", "codigo": "A2", "definicion": "Caída a un plano inferior de sustentación desde una altura no superior a 1,8 mts, (incluye caídas en profundidades no mayores a 1,8 mts. en excavaciones, agujeros, zanjas, etc). Ej. aeronáutico: caída desde escalerilla de acceso a cabina o desde plataforma baja de servicio.", "fuente": "Escaleras en mal estado, rampas sin pasamanos, desniveles no señalizados, plataformas sin borde de protección", "mecanismo": "Pérdida de equilibrio o pisada en falso en desnivel → caída a nivel inferior | Contexto carga/logística: Caída desde plataforma de camión de carga o desde el borde de la bodega de la aeronave al andén.", "consecuencia": "Fracturas, esguinces, TEC leve a moderado, contusiones, lumbalgia"}, {"riesgo": "Caídas de altura", "codigo": "A3", "definicion": "Caída a un plano inferior de sustentación, desde una altura superior a 1,8 mts. Caídas desde alturas (incluye caídas en profundidades mayores a 1,8 mts.). Ej. aeronáutico: trabajo sobre alas, estabilizadores o fuselaje superior sin protección de altura.", "fuente": "Andamios, escaleras de mano, techos, plataformas elevadas, bordes sin baranda, trabajo en altura sin arnés", "mecanismo": "Pérdida de sujeción o equilibrio en estructura elevada → caída libre o frenada | Contexto carga/logística: Caída durante carga en aeronaves de fuselaje alto o desde plataformas elevadoras de contenedores.", "consecuencia": "Fracturas múltiples, TEC grave, politraumatismo, muerte"}, {"riesgo": "Caídas al agua", "codigo": "A4", "definicion": "Caída a un curso de agua natural, o bien al interior de una estructura que contiene agua.", "fuente": "Muelles, embarcaciones, bordes de canales o piscinas sin protección", "mecanismo": "Pérdida de equilibrio en borde adyacente a cuerpo de agua", "consecuencia": "Ahogamiento, hipotermia, traumatismo por impacto, muerte"}], "Contacto con objetos": [{"riesgo": "Atrapamiento", "codigo": "B1", "definicion": "Enganche o aprisionamiento del cuerpo, o parte de éste, por mecanismos de las máquinas, objetos, piezas, materiales, equipos o vehículos que han perdido su estabilidad. Ej. aeronáutico: atrapamiento en superficies de control móviles (flaps, timón) o tren de aterrizaje.", "fuente": "Maquinaria sin guardas, cintas transportadoras, engranajes, prensas, rodillos", "mecanismo": "Enganche de extremidad o ropa en mecanismo en movimiento → tracción o compresión progresiva | Contexto carga/logística: Atrapamiento entre unit load devices (ULD), pallets o por la cinta transportadora de equipaje.", "consecuencia": "Aplastamiento, amputación, fractura, avulsión de tejidos, muerte"}, {"riesgo": "Caída de objetos", "codigo": "B2", "definicion": "Caída de elementos que golpean al cuerpo, por ejemplo, materiales, herramientas, estructuras, etc. Ej. aeronáutico: caída de herramientas o componentes durante mantenimiento en altura sobre el avión.", "fuente": "Materiales mal apilados, herramientas sin seguro en altura, izaje sin zona de exclusión", "mecanismo": "Objeto pierde soporte desde altura → impacto sobre persona | Contexto carga/logística: Caída de bultos o mercancía mal estibada desde altura durante la carga/descarga por encargo.", "consecuencia": "TEC, fracturas, contusiones, muerte"}, {"riesgo": "Cortes por objetos / herramientas corto-punzantes", "codigo": "B3", "definicion": "Cortes y/o punzaciones generadas en parte del cuerpo debido al contacto de éste con objetos cortantes, punzantes y/o abrasivos. Ej. aeronáutico: corte con bordes de chapa metálica del fuselaje, remaches o herramientas de corte.", "fuente": "Herramientas cortantes (cuchillos, sierras, cúter), bordes filosos de metal o vidrio, agujas", "mecanismo": "Contacto directo del cuerpo con borde o punta cortante bajo presión o movimiento | Contexto carga/logística: Corte al abrir zunchos, flejes metálicos o embalajes de encomiendas.", "consecuencia": "Heridas cortantes, laceraciones, perforaciones, hemorragia, infección"}, {"riesgo": "Choque contra objetos", "codigo": "B4", "definicion": "Encuentro violento del cuerpo, o de una parte de éste, con uno o varios objetos, estén éstos en movimiento o no. Ej. aeronáutico: choque contra estabilizadores, antenas o pitot durante desplazamiento bajo el avión.", "fuente": "Estructuras fijas, puertas, estanterías, equipos en movimiento, vehículos internos", "mecanismo": "Desplazamiento del cuerpo o del objeto hasta producir impacto", "consecuencia": "Contusiones, heridas, TEC, fracturas"}], "Contacto con seres vivos": [{"riesgo": "Contacto con personas", "codigo": "C1", "definicion": "Lesiones recibidas en el cuerpo, o parte de éste (agresiones, patadas, mordiscos, etc.) debido a la acción de otras personas.", "fuente": "Entornos con usuarios en crisis o violentos (salud, comercio, transporte), conflictos laborales", "mecanismo": "Agresión directa: golpe, empujón, mordedura, forcejeo", "consecuencia": "Contusiones, heridas, fracturas, TEC, trauma psicológico"}, {"riesgo": "Contacto con animales y/o insectos", "codigo": "C2", "definicion": "Lesiones recibidas en el cuerpo, o parte de éste (arañazos, patadas, mordiscos, etc.) debido a la interacción con animales y/o insectos.", "fuente": "Trabajo agrícola, ganadero, veterinario, rural; fauna silvestre", "mecanismo": "Mordedura, picadura, patada, arañazo, cornada | Contexto carga/logística: Contacto con animales o plagas en mercancía perecible o en bases remotas.", "consecuencia": "Heridas, infección, anafilaxia, rabia, intoxicación por veneno"}], "Contactos térmicos": [{"riesgo": "Contactos térmicos por calor", "codigo": "E1", "definicion": "Acción y efecto de hacer contacto físico con superficies o productos calientes. Ej. aeronáutico: contacto con motores, sistemas de escape o frenos recién operados (altas temperaturas).", "fuente": "Hornos, vapores, llamas, equipos de soldadura, fluidos calientes, superficies radiantes", "mecanismo": "Transferencia de calor por conducción, convección o radiación → daño tisular por temperatura", "consecuencia": "Quemaduras de 1°, 2° y 3° grado, ampollas, necrosis tisular"}, {"riesgo": "Contactos térmicos por frío", "codigo": "E2", "definicion": "Acción y efecto de hacer contacto físico con superficies o productos fríos. Ej. aeronáutico: manipulación de nitrógeno líquido o componentes a muy baja temperatura.", "fuente": "Superficies criogénicas, cámaras de frío, gases a baja temperatura", "mecanismo": "Transferencia de calor desde el cuerpo hacia la superficie → daño tisular por congelación local", "consecuencia": "Quemaduras por frío, congelamiento, crioadherencia"}], "Contacto con energía eléctrica": [{"riesgo": "Contactos eléctricos directos baja tensión", "codigo": "F1", "definicion": "Es todo contacto directo de las personas con partes activas en tensión (trabajando con tensiones menores a 1000 volts). Ej. aeronáutico: contacto con sistemas eléctricos de aeronave energizados (baja tensión).", "fuente": "Tableros sin protección, cables pelados, equipos defectuosos, trabajos en instalaciones energizadas", "mecanismo": "Paso de corriente a través del cuerpo entre punto de contacto y tierra", "consecuencia": "Tetanización muscular, quemaduras internas y externas, fibrilación ventricular, paro cardiaco, muerte"}, {"riesgo": "Contactos eléctricos directos alta tensión", "codigo": "F2", "definicion": "Es todo contacto directo de las personas con partes activas en tensión (trabajando con tensiones mayores a 1000 volts).", "fuente": "Líneas de alta tensión, subestaciones, transformadores", "mecanismo": "Arco eléctrico o contacto directo → corriente de alta intensidad a través del cuerpo", "consecuencia": "Quemaduras graves internas/externas, explosión por arco, paro cardiorrespiratorio, muerte"}, {"riesgo": "Contactos eléctricos indirectos baja tensión", "codigo": "F3", "definicion": "Es todo contacto de las personas con masas puestas accidentalmente en tensión (trabajando con tensiones menores a 1000 volts).", "fuente": "Falla de aislamiento, ausencia de puesta a tierra, equipos con falla de aislación", "mecanismo": "Contacto con superficie no prevista en tensión → paso de corriente", "consecuencia": "Descarga, quemaduras, paro cardiaco"}, {"riesgo": "Contactos eléctricos indirectos alta tensión", "codigo": "F4", "definicion": "Es todo contacto de las personas con masas puestas accidentalmente en tensión (trabajando con tensiones mayores a 1000 volts).", "fuente": "Igual que F3 pero en instalaciones de alta tensión", "mecanismo": "Igual que F3 con mayor magnitud de corriente", "consecuencia": "Quemaduras graves, paro cardiorrespiratorio, muerte"}], "Contacto con sustancias químicas": [{"riesgo": "Contacto con sustancias cáusticas y/o corrosivas (vía dérmica)", "codigo": "G1", "definicion": "Acción y efecto de tocar sustancias y productos cáusticos y/o corrosivos que puedan producir reacciones alérgicas y/o lesiones externas en la piel", "fuente": "Ácidos (sulfúrico, clorhídrico), bases fuertes (soda cáustica, amoníaco), agentes oxidantes", "mecanismo": "Reacción química con tejidos → desnaturalización proteica o saponificación de lípidos", "consecuencia": "Quemaduras químicas, lesiones oculares, ulceración de piel y mucosas, ceguera"}, {"riesgo": "Contacto con otras sustancias químicas", "codigo": "G2", "definicion": "Acción y efecto de tocar sustancias y productos sin efectos cáusticos y/o corrosivos que puedan producir reacciones alérgicas y/o lesiones externas en la piel", "fuente": "Solventes, pinturas, aceites, detergentes, plaguicidas", "mecanismo": "Absorción dérmica o contacto directo → reacción inflamatoria o sensibilización | Contexto carga/logística: Contacto con sustancias de encomiendas mal declaradas o con fugas durante el transporte de carga.", "consecuencia": "Dermatitis de contacto, eccema, irritación cutánea, alergia"}], "Contacto con elementos que se proyectan": [{"riesgo": "Explosiones", "codigo": "H1", "definicion": "Liberación brusca de gran cantidad de energía que produce un incremento violento y rápido de la presión, con desprendimiento de calor, luz y gases, teniendo su origen en transformaciones químicas y/o físicas. Ej. aeronáutico: explosión por vapores de combustible de aviación (Jet A1) en espacios mal ventilados.", "fuente": "Gas a presión, polvos explosivos, mezclas inflamables, tanques presurizados, reacciones exotérmicas", "mecanismo": "Liberación explosiva de energía → onda de presión, proyección de fragmentos, calor intenso", "consecuencia": "Barotrauma, quemaduras, proyección, politraumatismo, muerte"}, {"riesgo": "Proyección de fragmentos y/o partículas", "codigo": "H2", "definicion": "Contacto violento del cuerpo, o una parte de éste, con elementos proyectados como: piezas, fragmentos, partículas o líquido. Ej. aeronáutico: proyección de partículas al esmerilar, remachar o usar aire comprimido.", "fuente": "Esmeril, amoladora, sierra, tornos, trabajos de corte y mecanizado", "mecanismo": "Fragmento proyectado a alta velocidad → impacto puntual en tejidos", "consecuencia": "Heridas penetrantes, lesiones oculares graves, cuerpo extraño incrustado"}], "Contacto con / en vehículos en movimiento": [{"riesgo": "Atropellos o golpes con vehículos", "codigo": "I1", "definicion": "Impacto entre un peatón y un vehículo en movimiento. Ej. aeronáutico: atropello por vehículos de rampa (tractores de remolque, carros de equipaje, GPU).", "fuente": "Vehículos internos (montacargas, camiones), trabajo en vías públicas, señalización insuficiente", "mecanismo": "Impacto del vehículo en movimiento sobre persona | Contexto carga/logística: Atropello por tractores de remolque, dollies o vehículos de rampa durante operación de carga.", "consecuencia": "Fracturas múltiples, aplastamiento, TEC, politraumatismo, muerte"}, {"riesgo": "Choque, colisión o volcamiento", "codigo": "I2", "definicion": "Lesiones generadas en el cuerpo de un conductor o pasajero de un vehículo cuando éste se vuelca o impacta con otro vehículo y/o estructura externa. Ej. aeronáutico: colisión de vehículos de apoyo en tierra en plataforma.", "fuente": "Conducción de vehículos, fatiga, velocidad excesiva, condición de la ruta, distracción", "mecanismo": "Impacto del vehículo contra otro vehículo o estructura → fuerzas de desaceleración bruscas | Contexto carga/logística: Colisión de carros de carga o transpaletas en el andén o al aproximarse a la aeronave.", "consecuencia": "Fracturas, TEC, lesiones por proyección interna, muerte"}], "Incendios": [{"riesgo": "Incendios", "codigo": "J", "definicion": "Conjunto de condiciones (combustibles, comburentes y fuentes de ignición) cuya conjunción en un momento determinado, pueden originar un fuego incontrolado. Sus efectos son generalmente no deseados, produciendo lesiones personales por el humo (gases tóxicos y altas temperaturas) y daños materiales. Ej. aeronáutico: incendio por combustible de aviación, fluidos inflamables o fuentes de ignición en hangar.", "fuente": "Combustibles, fuentes de ignición (chispas, llamas, superficies calientes), acumulación de material inflamable", "mecanismo": "Combustión no controlada → exposición a llamas, humo y gases tóxicos (CO)", "consecuencia": "Quemaduras, intoxicación por CO, asfixia, muerte"}], "Exposición a condiciones atmosféricas extremas": [{"riesgo": "Exposición a ambientes con deficiencia de oxígeno", "codigo": "K1", "definicion": "Exposición de un trabajador a una atmosfera con déficit de oxígeno (concentración de oxígeno inferior al 19,5% en el aire), a presión atmosférica normal. Ej. aeronáutico: trabajo en interior de estanques de combustible (espacio confinado, deficiencia O2).", "fuente": "Espacios confinados (tanques, silos, pozos), atmósferas desplazadas por gases inertes o CO₂", "mecanismo": "Concentración insuficiente de O₂ → hipoxia celular progresiva | Contexto carga/logística: Deficiencia de oxígeno al ingresar a bodega de carga cerrada o contenedor sellado en base remota.", "consecuencia": "Mareo, pérdida de conciencia, hipoxia, muerte"}, {"riesgo": "Exposición a sustancias químicas tóxicas", "codigo": "K2", "definicion": "Exposición de un trabajador a una atmosfera con altas concentraciones de químicos provenientes principalmente de la descomposición de materia orgánica (ácido sulfhídrico, monóxido de carbono, anhídrido carbónico, amoníaco, etc.). Ej. aeronáutico: exposición a vapores de combustible en estanques o zonas confinadas.", "fuente": "Descomposición de materia orgánica (H₂S), CO de motores, emanaciones industriales", "mecanismo": "Inhalación del agente tóxico → absorción pulmonar → distribución sistémica", "consecuencia": "Intoxicación aguda, daño neurológico, fallo multiorgánico, muerte"}], "Exposición a altos niveles de radiación": [{"riesgo": "Exposición a radiaciones no ionizantes", "codigo": "L1", "definicion": "Exposición de un trabajador a altas dosis de radiaciones no ionizantes (ultravioleta (UV), láser, Infrarroja (IR), microondas, radiofrecuencias, campos de frecuencia extremadamente baja (ELF)), entendiendo dicha exposición como accidente. Ej. aeronáutico: radiación UV en trabajos exteriores en plataforma; ensayos no destructivos.", "fuente": "Arco de soldadura, láser industrial, UV intensa, equipos de radiofrecuencia de alta potencia", "mecanismo": "Absorción de energía electromagnética → daño térmico o fotoquímico agudo", "consecuencia": "Quemaduras retinianas, fotoqueratitis, eritema, daño tisular localizado"}, {"riesgo": "Exposición a radiaciones ionizantes", "codigo": "L2", "definicion": "Exposición de un trabajador a altas dosis de radiaciones ionizantes (rayos X, rayos gamma), entendiendo dicha exposición como accidente.", "fuente": "Fuentes radiactivas industriales sin protección, gammagrafía, instalaciones nucleares en falla", "mecanismo": "Ionización masiva de tejidos → ruptura de ADN y daño celular directo", "consecuencia": "Síndrome de irradiación aguda, radiodermitis, muerte celular, muerte"}], "Ingesta de Sustancias Nocivas": [{"riesgo": "Ingesta de sustancia nocivas", "codigo": "M", "definicion": "Ingesta de sustancias nocivas que puedan alterar la salud de un trabajador (alimentos en mal estado, venenos, sustancias químicas, etc.).", "fuente": "Alimentos contaminados, sustancias químicas sin identificar, plaguicidas, venenos", "mecanismo": "Absorción gastrointestinal del tóxico → distribución sistémica | Contexto carga/logística: Ingesta accidental por contaminación cruzada en manipulación de mercancías peligrosas transportadas por encargo.", "consecuencia": "Intoxicación aguda, daño hepático y renal, convulsiones, muerte"}], "Otros Riesgos": [{"riesgo": "Otros riesgos", "codigo": "N", "definicion": "Son aquellos riesgos de accidente que, a juicio del evaluador, no han sido descritos en ninguno de los ítemes anteriores.", "fuente": "Específico del contexto de evaluación", "mecanismo": "Variable según el riesgo identificado", "consecuencia": "Variable según el riesgo identificado"}]}, "Riesgos Higiénicos": {"Exposición a agentes químicos": [{"riesgo": "Exposición a aerosoles sólidos", "codigo": "O1", "definicion": "Permanencia en un ambiente de trabajo con presencia de partículas sólidas en suspensión como polvos, fibras y humos. (Sílice, polvo de harina, fibras, humos de soldadura, etc.) Ej. aeronáutico: inhalación de polvo de lijado de pintura, fibra de carbono o composites.", "fuente": "Sílice libre, amianto, polvo de harina, humos de soldadura, polvo de madera", "mecanismo": "Inhalación → depósito en vías respiratorias → inflamación crónica o fibrosis pulmonar", "consecuencia": "Silicosis, asbestosis, EPOC, neumoconiosis, cáncer pulmonar"}, {"riesgo": "Exposición a aerosoles líquidos", "codigo": "O2", "definicion": "Permanencia en un ambiente de trabajo con presencia de partículas líquidas en suspensión como nieblas y rocíos. (nieblas de ácidos, plaguicidas, etc.)", "fuente": "Rociado de plaguicidas, ácidos, pinturas en spray, lubricantes", "mecanismo": "Inhalación de partículas líquidas → absorción pulmonar y sistémica", "consecuencia": "Irritación respiratoria, bronquitis, neumonitis química, intoxicación sistémica"}, {"riesgo": "Exposición a gases y vapores", "codigo": "O3", "definicion": "Permanencia en un ambiente de trabajo con presencia de sustancias en estado gaseoso (gases o vapores), tales como: gases anestésicos, acetonas, tolueno, benceno, xileno, etc. Ej. aeronáutico: vapores de solventes, desengrasantes y selladores aeronáuticos (Skydrol, PR).", "fuente": "Solventes (tolueno, xileno, benceno), gases anestésicos, acetona, CO", "mecanismo": "Inhalación → absorción pulmonar → distribución sistémica", "consecuencia": "Narcosis, hepatotoxicidad, nefrotoxicidad, carcinogénesis, asfixia"}], "Exposición a agentes físicos": [{"riesgo": "Exposición a ruido", "codigo": "P1", "definicion": "Permanencia en un ambiente de trabajo con presencia continua de altos niveles de presión sonora (en forma estable o fluctuante), con la potencialidad de alterar el órgano de la audición. Ej. aeronáutico: ruido de motores en prueba, APU, herramientas neumáticas en plataforma.", "fuente": "Maquinaria industrial, herramientas neumáticas, motores, compresores, generadores", "mecanismo": "Vibración coclear crónica → daño progresivo de células ciliadas del órgano de Corti | Contexto carga/logística: Ruido de motores/APU en rampa durante carga con aeronave en operación.", "consecuencia": "Hipoacusia neurosensorial, tinnitus, estrés, accidentes por pérdida de señal auditiva"}, {"riesgo": "Exposición a vibraciones (cuerpo completo)", "codigo": "P2", "definicion": "Permanencia en un ambiente de trabajo con presencia de energía vibratoria que se transfiere al cuerpo humano en formal global (cuerpo completo), el cual actúa como receptor de energía mecánica.", "fuente": "Conducción de vehículos todoterreno, maquinaria pesada, equipo ferroviario", "mecanismo": "Transmisión de vibración al esqueleto axial y órganos → microtraumas repetitivos", "consecuencia": "Lumbalgia crónica, hernia discal, daño vascular sistémico"}, {"riesgo": "Exposición a vibraciones (mano-brazo)", "codigo": "P3", "definicion": "Permanencia en un ambiente de trabajo con presencia de energía vibratoria que se transfiere al componente mano-brazo. Ej. aeronáutico: vibración mano-brazo por uso prolongado de llave de impacto o remachadora.", "fuente": "Herramientas vibrantes (martillo neumático, esmeril, motosierra, taladro)", "mecanismo": "Transmisión de vibración al sistema neurovascular periférico del segmento mano-brazo", "consecuencia": "Síndrome de vibración mano-brazo, fenómeno de Raynaud, neuropatía periférica"}, {"riesgo": "Exposición a radiaciones ionizantes", "codigo": "P4", "definicion": "Permanencia en un ambiente de trabajo con presencia de radiaciones electromagnéticas capaces de producir la ionización de manera directa o indirecta, en su paso a través de la materia (Rayos X, Rayos Gamma, provenientes de generadores o fuentes; entre otras)", "fuente": "Fuentes radiactivas industriales, gammagrafía, radioterapia", "mecanismo": "Ionización celular acumulativa → daño progresivo de ADN en ciclos de exposición", "consecuencia": "Cáncer (leucemia, tiroides, pulmón), cataratas, infertilidad"}, {"riesgo": "Exposición a radiaciones no ionizantes", "codigo": "P5", "definicion": "Permanencia en un ambiente de trabajo con presencia de radiaciones electromagnéticas incapaces de producir ionización de manera directa o indirecta a su paso a través de la materia (Rayos visibles, UV de fuentes naturales o artificiales, Laser, Microondas, entre otros)", "fuente": "Soldadura (UV), exposición solar prolongada, pantallas, microondas, láser de baja potencia", "mecanismo": "Absorción energética crónica → daño fotoquímico o térmico acumulativo", "consecuencia": "Cáncer de piel, cataratas, fotoqueratitis, lesiones retinianas"}, {"riesgo": "Exposición a calor", "codigo": "P6", "definicion": "Permanencia en un ambiente de trabajo a altas temperaturas, las cuales pueden generar un aumento de la temperatura corporal interna del trabajador sobre los 38°C.", "fuente": "Hornos industriales, trabajo a la intemperie en verano, fuentes de calor radiante", "mecanismo": "Carga térmica supera la capacidad de termorregulación → hipertermia sistémica | Contexto carga/logística: Exposición a calor en faenas de carga en bases remotas del norte sin sombra ni climatización.", "consecuencia": "Golpe de calor, deshidratación, síncope térmico, calambres, muerte"}, {"riesgo": "Exposición a frío", "codigo": "P7", "definicion": "Permanencia en un ambiente de trabajo a bajas temperaturas, las cuales pueden generar una disminución de la temperatura corporal interna del trabajador bajo los 36°C.", "fuente": "Cámaras frigoríficas, intemperie en invierno, trabajo en zonas frías (crítico en Punta Arenas)", "mecanismo": "Pérdida de calor corporal mayor que la producción → hipotermia o vasoconstricción periférica | Contexto carga/logística: Exposición a frío extremo en operación de rampa en bases australes (Punta Arenas, zonas remotas).", "consecuencia": "Hipotermia, congelamiento de extremidades, pie de trinchera, muerte"}, {"riesgo": "Exposición a altas presiones", "codigo": "P8", "definicion": "Permanencia en un ambiente de trabajo a presiones superiores a la atmosférica (actividades bajo el nivel del mar (buceo), cámaras hiperbáricas, etc.).", "fuente": "Buceo, cámaras hiperbáricas, trabajo bajo nivel del mar", "mecanismo": "Aumento de presión → cambios en solubilidad de gases en sangre y tejidos", "consecuencia": "Enfermedad descompresiva, barotrauma, narcosis por nitrógeno"}, {"riesgo": "Exposición a bajas presiones", "codigo": "P9", "definicion": "Permanencia en un ambiente de trabajo a presiones inferiores a la atmosférica (trabajos a partir de los 3.000 m.s.n.m. (altitud geográfica).", "fuente": "Trabajo en altura geográfica > 3.000 msnm", "mecanismo": "Reducción de presión parcial de O₂ → hipoxia hipobárica progresiva | Contexto carga/logística: Exposición a baja presión/altitud en abastecimiento de bases en zonas de gran altitud geográfica.", "consecuencia": "Mal de altura agudo, edema pulmonar de altura, policitemia, hipobaria crónica"}], "Exposición a agentes biológicos": [{"riesgo": "Transmisión por fluidos corporales", "codigo": "Q1", "definicion": "Se entiende por fluido corporal a todas las secreciones o líquidos biológicos, fisiológicos o patológicos, que se producen en el organismo, tanto de bajo riesgo (deposiciones, secreciones nasales, expectoración, transpiración, lágrimas, orina o vómitos a excepción que contengan sangre visible) y de alto riesgo (se aplican siempre a la sangre y a todos los fluidos que contengan sangre visible, los que por la vía parenteral, pueden transmitir Virus de Hepatitis B, Virus de Hepatitis C, VIH, y otros agentes)", "fuente": "Sector salud, residuos hospitalarios, pinchazos con material cortopunzante contaminado", "mecanismo": "Inoculación o contacto de fluido infeccioso con mucosas o piel no íntegra", "consecuencia": "VIH, Hepatitis B y C, otras infecciones de transmisión sanguínea"}, {"riesgo": "Transmisión por inhalación dermal, oral y parenteral", "codigo": "Q2", "definicion": "Exposición a virus, bacterias, parásitos, etc., por inhalación dermal, oral y parenteral, la cual puede afectar la salud de una persona trabajadora generando enfermedades infecciosas y parasitarias agudas o crónicas.", "fuente": "Sector salud, aguas residuales, residuos sólidos, contacto con animales", "mecanismo": "Inhalación, ingestión o contacto dérmico con microorganismos → infección sistémica", "consecuencia": "Tuberculosis, leptospirosis, brucelosis, enfermedades parasitarias, infecciones oportunistas"}]}, "Riesgos Musculo Esqueléticos": {"Manejo manual de carga": [{"riesgo": "Sobrecarga física debido a manipulación manual de carga", "codigo": "R1", "definicion": "Trabajos en donde se deban levantar, descender o transportar manualmente objetos de más de 3 kilos. Trabajos en donde se deban empujar o arrastrar objetos utilizando 1 o 2 manos. Ej. aeronáutico: manipulación manual de neumáticos de aeronave (~40 kg), baterías, componentes pesados.", "fuente": "Cargas pesadas, frecuencia elevada, distancias largas, posturas inadecuadas durante el manejo", "mecanismo": "Sobresolicitación del sistema musculoesquelético → microlesiones acumulativas en columna y extremidades | Contexto carga/logística: Manipulación manual de bultos y encomiendas de peso variable en recepción y estiba, especialmente sin ayuda mecánica en bases remotas.", "consecuencia": "Lumbalgia, hernia discal, lesiones de hombro, contracturas musculares"}, {"riesgo": "Sobrecarga física debido a manipulación de personas / pacientes", "codigo": "R2", "definicion": "Trabajos en donde se deba realizar manejo manual de pacientes. Corresponde a actividades en donde se requiera fuerza para empujar, tirar, levantar, descender, transferir o de alguna manera mover o sostener una persona o parte del cuerpo de una persona que no sea autovalente, ya sea que se realice con o sin dispositivos de asistencia.", "fuente": "Movilización, transferencia e higiene de pacientes en sector salud u hogares de adulto mayor", "mecanismo": "Fuerzas elevadas e imprevisibles sobre columna y extremidades → microtraumas progresivos", "consecuencia": "Lumbalgia, lesiones de columna cervical y lumbar, trastornos musculoesqueléticos crónicos"}], "Trabajo repetitivo de miembros superiores": [{"riesgo": "Sobrecarga física debido al trabajo repetitivo de extremidades superiores", "codigo": "S1", "definicion": "Tarea donde se involucra los miembros superiores (hombro, brazo, antebrazo, mano), caracterizada por tareas durante las cuales las mismas acciones de trabajo son repetidas por más del 50% de la duración de éstas, y/o el tiempo de ciclo es inferior a 30 segundos, y con una duración total de una hora o más durante la jornada laboral y con un tiempo total de 5 o más horas a la semana. Ej. aeronáutico: trabajo repetitivo de remachado o atornillado en líneas de ensamblaje.", "fuente": "Líneas de producción, digitación prolongada, ensamblaje manual, uso de herramientas manuales", "mecanismo": "Contracción muscular repetitiva → acumulación de microlesiones tendinosas y neurovasculares", "consecuencia": "Tendinitis, epicondilitis, síndrome del túnel carpiano, síndrome de De Quervain"}], "Posturas forzadas": [{"riesgo": "Sobrecarga postural debido al trabajo de pie", "codigo": "T1", "definicion": "Trabajo en posición bípeda permanente con escasa opción de alternancia postural (Ej. Temporeras, laboratoristas, puestos en líneas de proceso, etc.)", "fuente": "Cajeras, operadores de línea, vendedores, manufactureros en cadena", "mecanismo": "Carga estática sostenida sobre miembros inferiores y columna sin variación postural", "consecuencia": "Várices, dolor lumbar, fatiga de piernas, fascitis plantar, pie plano"}, {"riesgo": "Sobrecarga postural debido al trabajo sentado", "codigo": "T2", "definicion": "Trabajo en posición sentado mantenido por períodos prolongados con escasa opción de alternancia postural (ej. puestos administrativos, uso de prolongado de pantallas de visualización de datos o PVD, camioneros, operador de maquinaria, conductores de locomoción publica, otros)", "fuente": "Trabajo administrativo, conductores, operadores de pantallas, call center", "mecanismo": "Compresión discal lumbar mantenida, reducción de circulación periférica en extremidades inferiores", "consecuencia": "Lumbalgia, hernia discal, trombosis venosa profunda, síndrome compartimental"}, {"riesgo": "Sobrecarga postural debido a trabajo en cuclillas", "codigo": "T3", "definicion": "Trabajo que implica flexionar (doblar) las rodillas al máximo y sostener esta posición durante tiempos prolongados (ej. mecánicos, electricistas, mucamas, etc.) Ej. aeronáutico: trabajo en cuclillas bajo el fuselaje o en tren de aterrizaje.", "fuente": "Mecánicos, electricistas, trabajadores de mantención en espacios confinados", "mecanismo": "Compresión de estructuras articulares de rodilla en posición de máxima flexión", "consecuencia": "Bursitis, meniscopatía, condromalacia rotuliana, lesiones ligamentosas"}, {"riesgo": "Sobrecarga postural debido a trabajo arrodillado", "codigo": "T4", "definicion": "Trabajo que implica apoyo (compresión) directa de las rodillas en forma sostenida (Ej. mecánicos de mantención, albañil, instaladores de piso, etc.). Ej. aeronáutico: trabajo arrodillado en inspección de superficies inferiores del avión.", "fuente": "Instaladores de piso, albañiles, mecánicos", "mecanismo": "Compresión directa de bursa prepatelar y estructuras periarticulares → inflamación crónica", "consecuencia": "Bursitis prepatelar, lesiones de meniscos, tendinitis rotuliana"}, {"riesgo": "Sobrecarga postural debido a tronco inclinado, en torsión o lateralización", "codigo": "T5", "definicion": "Trabajo con Posturas del tronco fuera del rango neutro o de confort; pudiendo incluir una o más de las siguientes situaciones: Trabajo con inclinación del tronco que se aleja del cuerpo (hacia adelante, o había atrás, habitualmente acompañado de piernas extendidas); Trabajo con torsión (rotación o giro) del tronco; Trabajo con lateralización del tronco (desviación lateral de la columna). Ej. aeronáutico: posturas forzadas de tronco al trabajar dentro de bahías o compartimentos.", "fuente": "Recolección, trabajo en zanjas, tareas con alcance adelantado prolongado", "mecanismo": "Carga biomecánica asimétrica sobre columna vertebral → compresión discal fuera del eje neutro | Contexto carga/logística: Postura forzada de tronco al estibar carga en espacios reducidos de bodega de aeronave.", "consecuencia": "Hernia discal, lumbalgia crónica, lumbociatalgia"}, {"riesgo": "Sobrecarga postural por flexión o extensión de la columna cervical", "codigo": "T6", "definicion": "Adopción de postura estática, en flexión o extensión del segmento cabeza – cuello, sin una pausa o variación postural que permita un adecuado descanso. Ejemplo (salas de control, uso de PVD en trabajo de oficina, etc.)", "fuente": "Uso prolongado de pantallas, cirujanos, dentistas, microscopistas", "mecanismo": "Carga sostenida sobre discos cervicales y musculatura posterior del cuello", "consecuencia": "Cervicobraquialgia, hernia discal cervical, cefalea tensional, dorsalgia alta"}, {"riesgo": "Sobrecarga postural debido a trabajo fuera del alcance funcional", "codigo": "T7", "definicion": "Trabajos que implican estiramiento, extensión, flexión, elevación, rotación o cualquier otro movimiento de extremidades (superiores e inferiores) producto de la operación de elementos que se encuentran fuera del alcance funcional. (Ej.: limpiador de vidrios, reponedor, carpinteros, pintores, mucamas, otros) Ej. aeronáutico: trabajo con brazos elevados en superficies superiores del avión fuera de alcance.", "fuente": "Reponedores, pintores, limpiadores de vidrios, trabajos de mantención en altura", "mecanismo": "Sobresolicitación de hombro y columna por trabajo con palancas biomecánicas desfavorables", "consecuencia": "Síndrome subacromial, tendinitis del manguito rotador, lumbalgia, bursitis de hombro"}], "Posturas estáticas": [{"riesgo": "Sobrecarga postural debido a actividad muscular estática", "codigo": "T8", "definicion": "Tareas con actividad muscular en posturas estáticas de cabeza/cuello, tronco, miembros superiores o inferiores, que se mantengan por más de 4 segundos consecutivamente. Corresponde a actividades en donde se aplica fuerza muscular y no se visualiza movimiento evidente de los segmentos del cuerpo, es decir las articulaciones se mantienen en su posición o hay mínimas variaciones", "fuente": "Trabajo de oficina, cirugía, microscopía, vigilancia con PVD", "mecanismo": "Contracción isométrica prolongada → isquemia muscular por compresión de capilares intramusculares", "consecuencia": "Fatiga muscular crónica, contracturas, cefalea tensional, dolores difusos"}]}, "Riesgos Psicosociales Laborales": {"Riesgos psicosociales": [{"riesgo": "Dimensión carga de trabajo (CT)", "codigo": "D1", "definicion": "La carga de trabajo son las exigencias que se le hacen a los trabajadores y trabajadoras para que cumplan con un determinado objetivo o tarea en un tiempo acotado o limitado. Es decir, en la carga de trabajo existe una relación entre la cantidad de tareas y el tiempo en que se deben realizar, que puede ser desde minutos hasta semanas o más.", "fuente": "Exceso de tareas, plazos cortos, multitarea simultánea, ritmo impuesto por máquina", "mecanismo": "Demanda cognitiva y temporal supera la capacidad de respuesta → activación crónica del estrés", "consecuencia": "Burnout, errores operativos, accidentes, trastornos del sueño, enfermedades cardiovasculares"}, {"riesgo": "Dimensión exigencias emocionales (EM)", "codigo": "D2", "definicion": "Las exigencias emocionales demandan nuestra capacidad para entender la situación de otras personas, sobre todo cuando esas personas sienten a su vez emociones intensas. Por ejemplo, la atención de víctimas de violencia o violación sexual, personas que pierden una persona querida, o que pierden su trabajo o han sufrido un accidente grave o amputación, o saben que tienen una enfermedad incurable, o adultos y niños en situación social crítica, o con problemas con la justicia.", "fuente": "Atención de usuarios en crisis, víctimas de violencia, trabajo clínico de alta complejidad emocional", "mecanismo": "Demanda sostenida de regulación emocional → agotamiento del recurso empático", "consecuencia": "Fatiga por compasión, burnout, depresión, trastorno de ansiedad, TEPT"}, {"riesgo": "Dimensión desarrollo profesional (DP)", "codigo": "D3", "definicion": "El desarrollo profesional es la oportunidad y el estímulo que ofrece el trabajo para que cada persona ponga en práctica los conocimientos y la experiencia que ya tiene, pero pueda también adquirir nuevos conocimientos y experiencia", "fuente": "Tareas rutinarias sin desarrollo, ausencia de capacitación, nula movilidad laboral", "mecanismo": "Frustración de expectativas de desarrollo → desmotivación crónica", "consecuencia": "Baja productividad, desmotivación, ausentismo, alta rotación"}, {"riesgo": "Dimensión reconocimiento y claridad de rol (CR)", "codigo": "D4", "definicion": "Esta dimensión o característica evalúa el reconocimiento, respeto y rectitud en el trato que recibimos en nuestro trabajo. También mide el sentido de las tareas que se realizan y la claridad de los límites de la responsabilidad que tenemos o que se nos asigna. La claridad de los roles asignados favorece el reconocimiento y el respeto.", "fuente": "Roles ambiguos, ausencia de retroalimentación, falta de reconocimiento explícito", "mecanismo": "Incertidumbre sobre expectativas → ansiedad y conflicto interno", "consecuencia": "Ansiedad, insatisfacción laboral, conflictos, errores por ambigüedad"}, {"riesgo": "Dimensión conflicto de rol (CR)", "codigo": "D5", "definicion": "En el trabajo, el rol es lo que se espera que una persona haga en el puesto que tiene asignado. El conflicto de rol evalúa la sensación de molestia personal ante el tipo de tareas que estamos obligados a hacer, especialmente cuando creemos que esas tareas son incongruentes entre sí, o que podrían hacerse de una manera diferente o cuando creemos que no nos corresponde realizarlas.", "fuente": "Órdenes contradictorias, tareas incompatibles con la función, exigencias éticas en tensión", "mecanismo": "Tensión entre demandas incompatibles → estrés de rol sostenido", "consecuencia": "Estrés, dificultad de concentración, errores, tensión emocional"}, {"riesgo": "Dimensión claridad de liderazgo (QL)", "codigo": "D6", "definicion": "La calidad del liderazgo es la forma en que se expresa el mando de una jefatura sobre nosotros. Incluye la capacidad de la jefatura de planificar el trabajo, resolver conflictos y colaborar para que los trabajadores/ as subordinados puedan llegar a completar su tarea.", "fuente": "Liderazgo autoritario, pasivo o inconsistente; falta de apoyo directivo", "mecanismo": "Clima laboral negativo → deterioro del bienestar psicológico y percepción de injusticia", "consecuencia": "Estrés, desmotivación, ausentismo, conflictos, baja cohesión de equipo"}, {"riesgo": "Dimensión compañerismo (CM)", "codigo": "D7", "definicion": "El compañerismo es la sensación de pertenecer a un equipo de trabajo conformado por pares, donde se recibe y se entrega ayuda cuando se necesita.", "fuente": "Clima fragmentado, competencia desleal, ausencia de apoyo horizontal", "mecanismo": "Aislamiento social laboral → reducción de recursos de afrontamiento ante el estrés", "consecuencia": "Estrés, ansiedad, conflictos interpersonales, ausentismo"}, {"riesgo": "Dimensión inseguridad en las condiciones de trabajo (IT)", "codigo": "D8", "definicion": "La inseguridad en las condiciones de trabajo es la sensación de que se nos puede cambiar de una manera más o menos arbitraria la forma en que trabajamos, o las tareas, los horarios, los lugares a los que estamos destinados.", "fuente": "Contratos precarios, amenaza de despido, cambios unilaterales de funciones u horarios", "mecanismo": "Incertidumbre laboral crónica → activación sostenida del eje del estrés", "consecuencia": "Ansiedad crónica, depresión, conductas de riesgo, absentismo"}, {"riesgo": "Dimensión equilibrio y trabajo y vida privada (CI)", "codigo": "D9", "definicion": "El equilibrio entre el trabajo y la vida privada es la manera en que estos dos ámbitos de nuestra vida nos permiten un desarrollo adecuado como personas, sin que una exigencia desmedida del trabajo interfiera con la vida privada.", "fuente": "Jornadas extensas, trabajo en horarios de descanso, demandas fuera de turno", "mecanismo": "Colonización del espacio personal por exigencias laborales → agotamiento global", "consecuencia": "Burnout, problemas familiares, baja productividad, trastornos del sueño"}, {"riesgo": "Dimensión confianza y justicia organizacional (CJ)", "codigo": "D10", "definicion": "La confianza y la justicia organizacional mide el grado de seguridad o confianza hacia la empresa o institución con el que los trabajadores/as afrontan sus tareas cotidianas. Esta seguridad se puede expresar de varias maneras, como confianza en los directivos, en los compañeros y compañeras de trabajo, en la solución justa de los conflictos y otras características similares.", "fuente": "Trato percibido como injusto, favoritismos, falta de transparencia en decisiones", "mecanismo": "Percepción de inequidad → resentimiento e internalización del agravio", "consecuencia": "Baja motivación, conductas contraproducentes, ausentismo, conflictos"}, {"riesgo": "Dimensión vulnerabilidad (VU)", "codigo": "D11", "definicion": "La vulnerabilidad en el trabajo es la sensación de temor, desprotección o indefensión ante un trato que el(la) trabajador(a) considera injusto por parte de la organización. Se puede entender también como la incapacidad de ejercer derechos o de resistir la disciplina que impone la relación laboral.", "fuente": "Relaciones de poder asimétricas, incapacidad percibida de resistir la disciplina o ejercer derechos", "mecanismo": "Inhibición de conductas de autocuidado y denuncia → exposición sostenida al riesgo", "consecuencia": "Ansiedad, estrés crónico, depresión, silenciamiento de riesgos"}, {"riesgo": "Dimensión violencia y acoso (VA)", "codigo": "D12", "definicion": "La violencia y el acoso en el trabajo es la exposición a conductas intimidatorias, ofensivas y no deseadas por las personas, que se relacionan con características de quien sufre dicha conducta tales como su apariencia física, género u orientación sexual, origen étnico, nacionalidad, creencias, etc.", "fuente": "Acoso laboral, acoso sexual, discriminación por género, origen étnico u orientación sexual", "mecanismo": "Exposición a conductas agresivas o denigrantes → trauma psicológico acumulativo", "consecuencia": "TEPT, depresión, ansiedad severa, ausentismo prolongado, deserción laboral"}]}};
 const SUSPEL = ["AIRCRAFT CLEANER 281", "ASSEMBLY FLUID #1", "AVP EPOXY FLT BLK 6UC", "AVP EPOXY FLT WHT 6UC", "AXAREL® 2000", "AeroShell Grease 22", "AeroShell Grease 33", "AeroShell Grease 33MS", "AeroShell Grease 6", "AeroShell Grease 7", "AeroShell Oil W 100", "Alcohol isopropílico (IPA)", "Aluminum", "Aviation Oil Elite 20W-50", "B&B 3100", "BASE PR 1005L", "BP TURBO OIL 2389", "BP Turbo Oil 2380", "Chromate Free Jointing", "DOW CORNING(R) 4 ELECTRICAL INSULATING COMPOUND", "DOWSILTM 734 Flowable Sealant, Clear", "DOWSILTM 738 Electrical Sealant, White", "DRY PTFE SPRAY", "Dielectric Grease Compound - 3.3 oz", "Hipoclorito cálcico ≥65% granulada", "Kilfrost Windscreen Washing Fluid 3", "KrytoxTM 240AC", "LOCTITE 221", "LOCTITE 222MS LOW STRENGTH", "LOCTITE 241", "LOCTITE LB 8009 HEAVY DUTY ANTI-SEIZE", "LOCTITE® 242TM THREADLOCKER MEDIUM STRENGTH", "LOCTITE® 242®", "MOLYKOTE(R) 41 EXTREME HIGH TEMP. BEARING GREASE", "MOLYKOTE(R) 44 HIGH TEMP. BEARING GREASE, MEDIUM", "MOLYKOTER® 55 O-RING GREASE", "MOLYKOTETM 111 Compound", "MOLYKOTETM 33 Medium Extreme", "MOLYKOTETM M-77 Paste", "MP-50TM", "Marvel Mystery Oil", "Mastinox D40 160ml Cartridge", "McLube 1720L", "NEOPRENO HP RUBBER & GASKET ADHESIVES", "Nitrogen", "PR 1196 Part A", "PR 1196 Part B", "PR 1198 Part A", "PR 1198 Part B", "PR 1422 A 1/2 Part A", "PR 1422 A 1/2 Part B", "PR 1422 A 2 Part A", "PR 1422 A 2 Part B", "PR 1422 B 1/2 Part A", "PR 1422 B 1/2 Part B", "PR 1422 B 2 Part A", "PR 1422 B 2 Part B", "PR 1425 B 2 Part A", "PR 1425 B 2 Part B", "PR 1428 B 1/2 Part A", "PR 1428 B 1/2 Part B", "PR 1428 B 2 Part A", "PR 1428 B 2 Part B", "PR 1435 Part A", "PR 1435 Part B", "PR 1436G SPRAY Part A", "PR 1436G SPRAY Part B", "PR1775 B 2 Part A", "PR1775 B 2 Part B", "PS 870 B 1/2 Part A", "PS 870 B 1/2 Part B", "PS 870 B 2 Part A", "PS 870 B 2 Part B", "PS 870 C 12 Part A", "PS 870 C 12 Part B", "PS 890 B 2 Part A", "PS 890 B 2 Part B", "ROYCO 363 MIL-PRF-7870D", "ROYCO 756 MIL-PRF-5606", "RTV 106 – red", "Royco 44", "SANTOVAC 5 POLYPHENYL ETHER LUBRICANT", "SANTOVAC OS-124TM POLYPHENYL ETHER LUBRICANT", "SILCOSET 101", "Santovac® 5, Diffusion Pump Oil", "Sellador Negro Multiuso DOWSILTM 732", "Skydrol® 500B-4 Fire Resistant Hydraulic Fluid", "Stabilant 22ª", "TECTYL® 891D CLASS I", "Tempo® Zinc Phosphate Primer Yellow", "Victory® AW 20W-50 Aviation Oil", "WD-40", "X/C® Aviation Hydraulic Fluid", "ZF1 Liquid Protector"];
 const PROCESOS_TAREAS_BASE = [{"proceso": "MANTENIMIENTO DE PIEZAS PEQUEÑAS", "tareas": ["Desarme manual de componentes mecánicos", "Limpieza de piezas con solventes desengrasantes", "Reemplazo de sellos, o-rings y rodamientos", "Armado, ajuste y lubricación de componentes"]}, {"proceso": "PINTURA FUSELAJE", "tareas": ["Preparación de superficie (lijado mecánico/manual y enmascarado)", "Preparación y dosificación de pinturas y solventes", "Aplicación de imprimante (primer) con pistola neumática", "Aplicación de pintura poliuretano y barniz"]}, {"proceso": "GESTION ADMINISTRATIVA", "tareas": ["Digitación de datos en pantallas de visualización (PVD)", "Revisión y firma de bitácoras de vuelo y mantenimiento", "Archivo y clasificación de documentación técnica física"]}, {"proceso": "CONDUCCION DE VEHICULOS", "tareas": ["Inspección visual pre-uso del equipo (Check-list)", "Traslado de personal técnico y materiales en área de rampa", "Posicionamiento y aseguramiento del vehículo junto a la aeronave"]}, {"proceso": "COLACION", "tareas": ["Traslado peatonal hacia zona de comedor o cafetería", "Uso de equipos eléctricos menores (microondas, hervidores)", "Ingesta de alimentos en áreas designadas"]}, {"proceso": "CAMBIO DE ROPA", "tareas": ["Uso de casilleros para guardado de ropa de calle", "Postura de ropa de trabajo y Elementos de Protección Personal (EPP)", "Uso de instalaciones sanitarias (duchas y lavamanos)"]}, {"proceso": "ENSAYO DE PIEZAS (PND)", "tareas": ["Aplicación superficial de tintas penetrantes o partículas magnéticas", "Inspección visual con lámparas UV / Operación de equipos de ultrasonido", "Limpieza final y remoción de químicos de contraste de la pieza"]}, {"proceso": "ENSAYO XX", "tareas": ["Toma y preparación de muestras de fluidos o materiales", "Operación de equipos de medición calibrados en laboratorio", "Registro de resultados y emisión de certificados técnicos"]}, {"proceso": "GESTION DE PEDIDOS Y VUELOS", "tareas": ["Recepción y verificación técnica de pautas de vuelo", "Armado, carga y sellado de carros de catering (Trolleys)", "Despacho de insumos hacia rampa para carga en aeronave"]}, {"proceso": "INGRESO/RETIRO DE SUSPEL", "tareas": ["Revisión de compatibilidad química según Hojas de Datos de Seguridad (HDS)", "Traslado manual o con transpaleta de envases químicos", "Etiquetado y almacenamiento en estantes con bandejas de retención"]}, {"proceso": "DISPOSICION FINAL (RESPEL)", "tareas": ["Segregación en origen de residuos peligrosos (ej. trapos contaminados)", "Trasvije de fluidos residuales a tambores de acopio temporal", "Sellado, rotulación y pesaje de contenedores para retiro final"]}, {"proceso": "MANTENIMIENTO AERONAVE", "tareas": ["Inspección visual exterior del fuselaje, alas y empenaje (Walk-around)", "Intervención mecánica en sistemas de tren de aterrizaje y frenos", "Revisión de sistemas neumáticos e hidráulicos a presión", "Pruebas operacionales en tierra de motores y sistemas de aviónica"]}, {"proceso": "LIMPIEZA", "tareas": ["Barrido manual y recolección de despuntes en taller", "Aplicación de material absorbente sobre derrames de fluidos o aceites", "Lavado, desengrasado y ordenamiento de herramientas manuales"]}];
 const CARGOS_BASE = [{"area": "Mantenimiento", "nombre": "Mecánico de Aviónica (Electrónico)", "riesgos": "Contacto con energía eléctrica; exposición a radiación no ionizante; posturas forzadas en habitáculos.", "consecuencias": "Shock eléctrico, quemaduras, fatiga visual, trastornos musculoesqueléticos.", "medidas": "Aplicación rigurosa de protocolo de bloqueo y etiquetado (LOTO). Verificación de energía cero antes de intervenir.", "epp": "Calzado de seguridad dieléctrico, guantes aislantes normados, gafas de seguridad de policarbonato."}, {"area": "Mantenimiento", "nombre": "Mecánico Neumático e Hidráulico", "riesgos": "Contacto con fluidos a alta presión; exposición a ruido constante; proyección de partículas.", "consecuencias": "Inyección subcutánea de fluidos, dermatitis química severa, hipoacusia neurosensorial.", "medidas": "Procedimientos de despresurización estricta antes de abrir sistemas. Rotación en zonas de alto nivel de ruido.", "epp": "Guantes de caucho butílico/vitón (resistentes a Skydrol), antiparras herméticas, doble protección auditiva (tapón + fono)."}, {"area": "Mantenimiento", "nombre": "Mecánico de Estructuras y Motores", "riesgos": "Trabajo en altura física; atrapamiento; manejo manual de cargas; contacto con superficies calientes.", "consecuencias": "Poligolpes por caídas, amputaciones, lumbago mecánico, quemaduras térmicas.", "medidas": "Uso de plataformas elevadoras certificadas. Esperar tiempos de enfriamiento técnicos para motores. Aplicar TMERT.", "epp": "Arnés de seguridad de cuerpo completo con doble cabo (si supera 1.8m), casco con barbiquejo, calzado de seguridad, guantes anticorte o cabritilla."}, {"area": "Mantenimiento", "nombre": "Pintor Aeronáutico", "riesgos": "Inhalación de vapores orgánicos; contacto con solventes; trabajo en altura.", "consecuencias": "Intoxicación aguda, asma ocupacional, dermatitis crónica, contusiones por caídas.", "medidas": "Uso exclusivo de cabinas con extracción forzada y filtros. Rotación de personal expuesto.", "epp": "Traje desechable tipo Tyvek, respirador de rostro completo (Full- Face) con filtros para vapores orgánicos y partículas, guantes de nitrilo."}, {"area": "Operaciones en Tierra (Rampa)", "nombre": "Operario de Carga y Equipaje", "riesgos": "Manejo manual de cargas continuo; exposición a ruido extremo; riesgo de atropello.", "consecuencias": "Hernias discales, aplastamiento, politraumatismos, hipoacusia severa.", "medidas": "Respetar límites de peso (Ley 20.949). Demarcación de zonas de tránsito peatonal exclusivas en rampa.", "epp": "Doble protección auditiva obligatoria, calzado de seguridad con puntera, chaleco reflectante de alta visibilidad, guantes de cabritilla/multiflex."}, {"area": "Operaciones en Tierra (Rampa)", "nombre": "Operador de Abastecimiento (Fueler)", "riesgos": "Manipulación de líquidos inflamables; inhalación de vapores; caídas a distinto nivel.", "consecuencias": "Quemaduras por deflagración, intoxicación por hidrocarburos, fracturas.", "medidas": "Conexión obligatoria de cables de puesta a tierra antes del trasvije. Prohibición de elementos electrónicos no intrínsecamente seguros.", "epp": "Ropa de trabajo antiestática, calzado de seguridad sin piezas metálicas expuestas, guantes de nitrilo de caña larga, protección visual."}, {"area": "Operaciones en Tierra (Rampa)", "nombre": "Cleaner (Aseador de Cabina)", "riesgos": "Riesgo biológico; posturas forzadas en espacios reducidos; movimientos repetitivos.", "consecuencias": "Infecciones cruzadas, tendinitis, epicondilitis.", "medidas": "Protocolo específico para la manipulación y disposición de fluidos corporales (bolsas rojas). Pausas activas.", "epp": "Guantes desechables de nitrilo (doble par en áreas de baño), mascarilla N95 (o similar para riesgo biológico), gafas de seguridad, calzado antideslizante."}, {"area": "Servicio al Pasajero", "nombre": "Agente de Check-in y Embarque", "riesgos": "Trato directo con público (riesgo agresiones); bipedestación prolongada;", "consecuencias": "Estrés laboral, síndrome de burnout, fatiga venosa.", "medidas": "Protocolo de manejo de crisis/pasajeros disruptivos. Rotación de", "epp": "No aplica EPP de alta complejidad. Uso de calzado ergonómico y corporativo cerrado."}, {"area": "Operaciones de Vuelo", "nombre": "Piloto / Primer Oficial", "riesgos": "Exposición a radiación cósmica; alta carga mental; posturas sedentes prolongadas.", "consecuencias": "Fatiga crónica, trastornos del sueño, TME lumbares y cervicales.", "medidas": "Cumplimiento estricto de normativa sobre tiempos máximos de vuelo y descanso. Chequeos médicos aeronáuticos periódicos.", "epp": "Audífonos de aviación (Headsets) con atenuación de ruido activa, gafas con filtro UV para radiación solar en altitud."}, {"area": "Operaciones de Vuelo", "nombre": "Tripulante de Cabina (TCP)", "riesgos": "Cambios de presión; manejo de carros pesados; caídas por turbulencias; riesgo biológico.", "consecuencias": "Barotrauma, lesiones articulares, fatiga, contagio viral.", "medidas": "Aseguramiento inmediato de equipos en señal de cinturones. Técnicas cinéticas para empujar carros de servicio.", "epp": "Calzado bajo y antideslizante obligatorio durante el servicio en vuelo. Guantes de procedimiento para manejo de residuos."}, {"area": "Administración", "nombre": "Administrativo / Directivos", "riesgos": "Uso de PVD; sedentarismo continuo; carga mental.", "consecuencias": "Fatiga visual, cervicalgia, estrés psicológico.", "medidas": "Aplicación de evaluación ergonómica (D.S. 594). Programa de pausas activas. Regulación de iluminación y climatización.", "epp": "No aplica EPP de forma directa. Apoyamuñecas, reposapiés o soportes lumbares según necesidad ergonómica (considerado mobiliario/accesorio, no EPP)."}];
@@ -793,6 +827,18 @@ function loadCat(){ const c=localStorage.getItem(CATK); if(c){ CAT=JSON.parse(c)
     herramientasBaseInit().forEach(h=>{ if(!existentes.includes(h.nombre)) CAT.herramientas.push(h); });
     CAT._herrBaseCargado = true; saveCat();
   }
+  if(!CAT._suspelBaseCargado){
+    CAT.suspel = CAT.suspel || [];
+    const existentesSup = CAT.suspel.map(s=>s.nombre.toLowerCase());
+    suspelBaseInit().forEach(s=>{ if(!existentesSup.includes(s.nombre.toLowerCase())) CAT.suspel.push(s); });
+    // Migrar sustancias personalizadas agregadas antes de esta versión (solo tenían nombre)
+    (CAT.suspelCustom||[]).forEach(s=>{
+      if(!CAT.suspel.some(x=>x.nombre.toLowerCase()===s.nombre.toLowerCase())){
+        CAT.suspel.push({id:s.id, nombre:s.nombre, vias:'', consecuencias:'', almacenamiento:'', incompatibilidad:'', medidas:'', epp:''});
+      }
+    });
+    CAT._suspelBaseCargado = true; saveCat();
+  }
   if(!CAT._cargosBaseCargado){
     const existentes = (CAT.cargos||[]).map(c=>c.nombre);
     cargosBaseInit().forEach(c=>{ if(!existentes.includes(c.nombre)) CAT.cargos.push(c); });
@@ -807,6 +853,8 @@ function loadCat(){ const c=localStorage.getItem(CATK); if(c){ CAT=JSON.parse(c)
 } else {
   CAT.sensibilidades = JSON.parse(JSON.stringify(SENSIBILIDADES_BASE));
   CAT.herramientas = herramientasBaseInit();
+  CAT.suspel = suspelBaseInit();
+  CAT._suspelBaseCargado = true;
   CAT.cargos = cargosBaseInit();
   CAT.epp = eppBaseInit();
   CAT._herrBaseCargado = true;
@@ -832,6 +880,9 @@ function cargosBaseInit(){
 }
 function herramientasBaseInit(){
   return HERRAMIENTAS_BASE.map(h=>({ id:uid(), nombre:h.nombre, grupo:h.grupo, peligros:(h.peligros||[]).slice(), riesgos:h.riesgos, consecuencias:h.consecuencias, medidas:'' }));
+}
+function suspelBaseInit(){
+  return SUSPEL_ATTRS.map(a=>({ id:uid(), nombre:a.nombre, vias:a.vias||'', consecuencias:a.consecuencias||'', almacenamiento:a.almacenamiento||'', incompatibilidad:a.incompatibilidad||'', medidas:a.medidas||'', epp:'' }));
 }
 function eppBaseInit(){
   return ['Casco de seguridad','Antiparras / gafas de seguridad','Protección auditiva (tapones)','Protección auditiva (fonos)','Guantes de nitrilo','Guantes anticorte','Guantes dieléctricos','Calzado de seguridad','Protección respiratoria (media cara)','Protección respiratoria (cara completa)','Arnés de seguridad','Ropa de trabajo / overol','Chaleco reflectante','Protector facial','Delantal químico'].map(n=>({id:uid(),nombre:n}));
@@ -863,6 +914,69 @@ function exportarCatalogos(){
   alert('Respaldo completo exportado (catálogos + entrevistas + perfiles). Guárdalo y pásalo al otro dispositivo para importarlo.');
 }
 
+// Fusiona una lista importada dentro de una local, por una función de coincidencia (ej. mismo nombre).
+// Si coincide, actualiza los campos indicados sobre la entrada local (conserva su id).
+// Si no coincide, la agrega como nueva con un id local nuevo.
+// Devuelve el arreglo resultante y un mapa {idImportado: idLocal} para remapear relaciones.
+function mergeCatalogoLista(localArr, importArr, matchFn, camposActualizar){
+  const arr = (localArr||[]).slice();
+  const idMap = {};
+  (importArr||[]).forEach(imp=>{
+    const existente = arr.find(loc=>matchFn(loc, imp));
+    if(existente){
+      idMap[imp.id] = existente.id;
+      (camposActualizar||[]).forEach(c=>{ if(imp[c]!==undefined && imp[c]!==null && imp[c]!=='') existente[c]=imp[c]; });
+    } else {
+      const nuevoId = uid();
+      idMap[imp.id] = nuevoId;
+      arr.push(Object.assign({}, imp, {id:nuevoId}));
+    }
+  });
+  return { arr, idMap };
+}
+function fusionarCatalogos(dc){
+  let r;
+  r = mergeCatalogoLista(CAT.areasMacro, dc.areasMacro, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['nombre']);
+  CAT.areasMacro = r.arr; const mapMacro = r.idMap;
+
+  const dcEsp = (dc.areasEsp||[]).map(e=>Object.assign({}, e, {areaMacroId: mapMacro[e.areaMacroId]||e.areaMacroId}));
+  r = mergeCatalogoLista(CAT.areasEsp, dcEsp, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase() && a.areaMacroId===b.areaMacroId, ['nombre']);
+  CAT.areasEsp = r.arr; const mapEsp = r.idMap;
+
+  const dcProc = (dc.procesos||[]).map(p=>Object.assign({}, p, {areaEspId: mapEsp[p.areaEspId]||p.areaEspId}));
+  r = mergeCatalogoLista(CAT.procesos, dcProc, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase() && a.areaEspId===b.areaEspId, ['nombre']);
+  CAT.procesos = r.arr; const mapProc = r.idMap;
+
+  r = mergeCatalogoLista(CAT.herramientas, dc.herramientas, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['grupo','riesgos','consecuencias','medidas']);
+  CAT.herramientas = r.arr; const mapHerr = r.idMap;
+  (dc.herramientas||[]).forEach(imp=>{
+    const local = CAT.herramientas.find(h=>h.id===mapHerr[imp.id]);
+    if(local && imp.peligros) local.peligros = Array.from(new Set((local.peligros||[]).concat(imp.peligros)));
+  });
+
+  const dcTareas = (dc.tareas||[]).map(t=>Object.assign({}, t, {
+    procesoId: mapProc[t.procesoId]||t.procesoId,
+    herrIds: (t.herrIds||[]).map(hid=>mapHerr[hid]||hid)
+  }));
+  r = mergeCatalogoLista(CAT.tareas, dcTareas, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase() && a.procesoId===b.procesoId, ['nombre']);
+  CAT.tareas = r.arr;
+  dcTareas.forEach(imp=>{
+    const local = CAT.tareas.find(t=>t.id===r.idMap[imp.id]);
+    if(local) local.herrIds = Array.from(new Set((local.herrIds||[]).concat(imp.herrIds||[])));
+  });
+
+  r = mergeCatalogoLista(CAT.suspel, dc.suspel, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['vias','consecuencias','almacenamiento','incompatibilidad','medidas','epp']);
+  CAT.suspel = r.arr;
+
+  r = mergeCatalogoLista(CAT.sensibilidades, dc.sensibilidades, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['nombre']);
+  CAT.sensibilidades = r.arr;
+
+  r = mergeCatalogoLista(CAT.cargos, dc.cargos, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['nombre']);
+  CAT.cargos = r.arr;
+
+  r = mergeCatalogoLista(CAT.epp, dc.epp, (a,b)=>a.nombre.toLowerCase()===b.nombre.toLowerCase(), ['nombre']);
+  CAT.epp = r.arr;
+}
 function importarCatalogos(inp){
   if(!inp.files || !inp.files[0]) return;
   const file = inp.files[0];
@@ -887,12 +1001,13 @@ function importarCatalogos(inp){
       const actualizaCount = entrevistasNuevas.filter(e=>idsActuales.includes(e.id)).length;
 
       const resumen = 'Archivo del '+(data._fecha||'fecha desconocida')+'\n\n'+
-        'CATÁLOGOS (se reemplazan):\n'+
+        'CATÁLOGOS (se fusionan — si un nombre ya existe se actualiza, si es nuevo se agrega; nada se borra):\n'+
         '• '+((data.catalogos.areasMacro||[]).length)+' áreas macro\n'+
         '• '+((data.catalogos.areasEsp||[]).length)+' áreas específicas\n'+
         '• '+((data.catalogos.procesos||[]).length)+' procesos\n'+
         '• '+((data.catalogos.tareas||[]).length)+' tareas\n'+
         '• '+((data.catalogos.herramientas||[]).length)+' herramientas\n'+
+        '• '+((data.catalogos.suspel||[]).length)+' sustancias\n'+
         '• '+((data.catalogos.cargos||[]).length)+' cargos\n'+
         '• '+((data.catalogos.sensibilidades||[]).length)+' sensibilidades\n'+
         '• '+((data.catalogos.epp||[]).length)+' EPP\n\n'+
@@ -906,8 +1021,8 @@ function importarCatalogos(inp){
 
       if(!confirm(resumen)){ inp.value=''; return; }
 
-      // 1. Catálogos: reemplazar
-      CAT = data.catalogos;
+      // 1. Catálogos: fusionar por nombre (nunca se reemplazan ni se borran)
+      if(data.catalogos) fusionarCatalogos(data.catalogos);
       saveCat();
 
       // 2. Entrevistas: fusionar por id (nunca borrar las actuales)
@@ -969,9 +1084,10 @@ function gt(id){
 function rHome(){
   db = JSON.parse(localStorage.getItem(DK)||'[]');
   document.getElementById('st-entrevistas').textContent = db.length;
-  let peligros=0, intolerables=0, sinClasificar=0, ctrlPend=0, noSync=0;
+  let peligros=0, intolerables=0, sinClasificar=0, ctrlPend=0, noSync=0, sinArchivar=0;
   db.forEach(e=>{
     if(!e.sheetCargada) noSync++;
+    if(e.firmaTrabajador && !e.pdfDriveUrl) sinArchivar++;
     (e.peligros||[]).forEach(p=>{
       peligros++;
       if(!p.codigo) sinClasificar++;
@@ -984,6 +1100,7 @@ function rHome(){
   document.getElementById('st-sinclasificar').textContent = sinClasificar;
   document.getElementById('st-ctrlpend').textContent = ctrlPend;
   document.getElementById('st-nosync').textContent = noSync;
+  const elArch = document.getElementById('st-sinarchivar'); if(elArch) elArch.textContent = sinArchivar;
   rFotosPendientesBadge();
   intentarSubirFotosPendientes();
 }
@@ -1012,7 +1129,7 @@ function nuevaEntrevista(){
     ts: Date.now()
   };
   // Reset UI
-  ['d-nombre','d-rut','d-antiguedad','d-lugar','d-ideal','d-real','d-cargo-otro','d-proceso-otro','d-tarea-otro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['d-nombre','d-rut','d-antiguedad','d-ideal','d-real','d-cargo-otro','d-proceso-otro','d-tarea-otro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['d-sexo','d-turno'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['d-cargo-otro','d-proceso-otro','d-tarea-otro'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   // Poblar desplegables desde catálogo
@@ -1088,8 +1205,8 @@ function onFotoTarea(inp){
   comprimir(inp.files[0],(d)=>{
     entrevista.fotoTarea = d;
     document.getElementById('d-foto-prev').innerHTML = '<img src="'+d+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--border)">';
-    encolarFotoPendiente(entrevista.id, 'tarea', d);
   });
+  comprimirMiniatura(inp.files[0],(t)=>{ entrevista.fotoTareaThumb=t; });
 }
 
 function guardarDatos(){
@@ -1098,7 +1215,7 @@ function guardarDatos(){
   // Cargo
   const cargoSel = document.getElementById('d-cargo').value;
   entrevista.trabCargo = cargoSel==='__otro' ? document.getElementById('d-cargo-otro').value.trim() : cargoSel;
-  entrevista.trabAntiguedad = document.getElementById('d-antiguedad').value.trim();
+  entrevista.trabAntiguedad = (document.getElementById('d-antiguedad').value.trim()) ? document.getElementById('d-antiguedad').value.trim()+' años' : '';
   // Área
   const macroId = document.getElementById('d-area-macro').value;
   const espId = document.getElementById('d-area-esp').value;
@@ -1117,9 +1234,11 @@ function guardarDatos(){
   const tareaSel = document.getElementById('d-tarea').value;
   if(tareaSel==='__otro') entrevista.tarea = document.getElementById('d-tarea-otro').value.trim();
   else { const tar = CAT.tareas.find(t=>t.id===tareaSel); entrevista.tarea = tar?tar.nombre:''; entrevista._tareaId = tareaSel; }
-  entrevista.lugar = document.getElementById('d-lugar').value.trim();
   entrevista.nIdeal = document.getElementById('d-ideal').value;
   entrevista.nReal = document.getElementById('d-real').value;
+  entrevista.nGenHombres = document.getElementById('d-gen-h').value;
+  entrevista.nGenMujeres = document.getElementById('d-gen-m').value;
+  entrevista.nGenOtro = document.getElementById('d-gen-o').value;
   entrevista.fecha = document.getElementById('d-fecha').value;
   entrevista.hora = document.getElementById('d-hora').value;
   if(!entrevista.trabNombre || !entrevista.tarea){alert('Ingresa al menos el nombre del trabajador y la tarea');return;}
@@ -1205,6 +1324,11 @@ function addHerrManual(){
   const v = inp.value.trim();
   if(!v)return;
   if(!entrevista.herramientas.includes(v)) entrevista.herramientas.push(v);
+  // Guardar también en el catálogo (si no existe ya, sin importar mayúsculas) para no tener que ir a Catálogos aparte
+  if(!CAT.herramientas.some(h=>h.nombre.toLowerCase()===v.toLowerCase())){
+    CAT.herramientas.push({id:uid(), nombre:v, peligros:[]});
+    saveCat();
+  }
   inp.value='';
   document.getElementById('herr-results').style.display='none';
   rHerr();
@@ -1226,7 +1350,8 @@ function buscarSuspel(q){
   const res = document.getElementById('suspel-results');
   if(!q||q.length<1){res.style.display='none';return;}
   const ql = q.toLowerCase();
-  suspelMatches = SUSPEL.filter(s=>s.toLowerCase().includes(ql) && !entrevista.suspel.includes(s)).slice(0,20);
+  const listaCompleta = SUSPEL.concat((CAT.suspel||[]).map(s=>s.nombre));
+  suspelMatches = listaCompleta.filter(s=>s.toLowerCase().includes(ql) && !entrevista.suspel.includes(s)).slice(0,20);
   if(suspelMatches.length===0){res.innerHTML='<div class="suspel-item" style="color:var(--muted)">Sin coincidencias — usa el botón para agregarla manual</div>';res.style.display='block';return;}
   res.innerHTML = suspelMatches.map((s,i)=>'<div class="suspel-item" onclick="addSuspelIdx('+i+')">'+s+'</div>').join('');
   res.style.display='block';
@@ -1243,6 +1368,9 @@ function addSuspelManual(){
   const v = inp.value.trim();
   if(!v) return;
   if(!entrevista.suspel.includes(v)) entrevista.suspel.push(v);
+  CAT.suspel = CAT.suspel || [];
+  const yaExiste = SUSPEL.some(s=>s.toLowerCase()===v.toLowerCase()) || CAT.suspel.some(s=>s.nombre.toLowerCase()===v.toLowerCase());
+  if(!yaExiste){ CAT.suspel.push({id:uid(), nombre:v, vias:'', consecuencias:'', almacenamiento:'', incompatibilidad:'', medidas:'', epp:''}); saveCat(); }
   inp.value='';
   document.getElementById('suspel-results').style.display='none';
   rSuspelChips();
@@ -1260,19 +1388,21 @@ function rSuspelChips(){
 }
 
 // ═══════════════ COMPRESIÓN DE IMÁGENES ═══════════════
-function comprimir(file,cb){
+function comprimir(file,cb){ comprimirConfig(file, 800, 0.75, cb); }
+function comprimirMiniatura(file,cb){ comprimirConfig(file, 420, 0.55, cb); }
+function comprimirConfig(file, maxDim, calidad, cb){
   const r=new FileReader();
   r.onload=ev=>{
     const img=new Image();
     img.onload=()=>{
-      let w=img.width,h=img.height,M=800;
+      let w=img.width,h=img.height,M=maxDim;
       if(w>M){h=Math.round(h*M/w);w=M;}
       if(h>M){w=Math.round(w*M/h);h=M;}
       const cv=document.createElement('canvas');cv.width=w;cv.height=h;
       const ctx=cv.getContext('2d');
       ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,w,h);
       ctx.drawImage(img,0,0,w,h);
-      cb(cv.toDataURL('image/jpeg',0.75));
+      cb(cv.toDataURL('image/jpeg',calidad));
     };
     img.src=ev.target.result;
   };
@@ -1302,14 +1432,17 @@ function calcSugerencias(){
       });
     }
   });
-  // Materiales: SUSPEL con perfil → sugerir contacto químico
+  // Materiales: SUSPEL con perfil → sugerir contacto químico ya clasificado como G2
   (entrevista.suspel||[]).forEach(sNombre=>{
     const perfil = matchSuspelPerfil(sNombre);
     if(perfil){
       const key = 'materiales|G2|'+sNombre;
       if(descartados.includes(key)) return;
       if(entrevista.peligros.some(p=>p.gema==='materiales'&&(p.descTerreno||'').includes(sNombre))) return;
-      sug.push({ key, gema:'materiales', codigo:'', riesgo:'Contacto/exposición a '+sNombre, suspelPerfil:perfil, origen:sNombre,
+      const info = codInfoFull('G2'); // sustancia química = riesgo ISP G2 (contacto con sustancias químicas)
+      sug.push({ key, gema:'materiales', codigo:'G2', riesgo:info.riesgo, cat:info.cat, fam:info.fam,
+        fuente:info.fuente, mecanismo:info.mecanismo,
+        consecuencia:perfil.consecuencias||info.consecuencia, suspelPerfil:perfil, origen:sNombre,
         desc:'Exposición a '+sNombre+'. '+(perfil.vias||''), medidas:perfil.medidas });
     }
   });
@@ -1320,9 +1453,9 @@ function codInfoFull(cod){
   return {cod,riesgo:'?',cat:'',fam:'',fuente:'',mecanismo:'',consecuencia:''};
 }
 function matchSuspelPerfil(nombre){
-  // Buscar el perfil cuyo grupo contenga esta sustancia
+  // Buscar el perfil cuyo grupo contenga esta sustancia — en el catálogo editable (incluye ediciones y sustancias agregadas manualmente)
   const n = nombre.toLowerCase();
-  for(const perfil of SUSPEL_ATTRS){
+  for(const perfil of (CAT.suspel||[])){
     const grupoNombres = perfil.nombre.toLowerCase();
     // Match por palabra clave del nombre comercial
     const primeraPalabra = n.split(/[\s\d(]/)[0];
@@ -1361,8 +1494,16 @@ function aceptarSugerencia(i){
     p.codigo=s.codigo; p.categoria=s.cat; p.familia=s.fam; p.riesgo=s.riesgo;
     p.fuente=s.fuente; p.mecanismo=s.mecanismo; p.consecuencia=s.consecuencia;
   } else {
+    // Sustancia: precargar la clasificación (G2) y toda la info de la ficha HDS
     p.descTerreno = s.desc;
+    p.codigo=s.codigo; p.categoria=s.cat; p.familia=s.fam; p.riesgo=s.riesgo;
+    p.fuente=s.fuente; p.mecanismo=s.mecanismo; p.consecuencia=s.consecuencia;
     p.controlActual = s.medidas||'';
+    if(s.suspelPerfil && s.suspelPerfil.epp){
+      p.eppSugerido = s.suspelPerfil.epp;
+      // Sumar el EPP de la ficha al control existente para que aparezca en el PDF y en el Sheets
+      p.controlActual = (p.controlActual ? p.controlActual+'. ' : '') + 'EPP: '+s.suspelPerfil.epp;
+    }
   }
   p.origen='prevencionista';
   entrevista.peligros.push(p);
@@ -1414,7 +1555,7 @@ function rPeligros(){
       '<div style="font-size:13px;margin-bottom:6px">'+(p.descTerreno||'(sin descripción)')+'</div>'+
       (p.codigo?'<div style="font-size:11px;color:var(--muted)">Clasificado: '+p.codigo+' — '+p.riesgo+'</div>':'<div style="font-size:11px;color:var(--orange)"><i class="ti ti-alert-circle"></i> Pendiente clasificar (gabinete)</div>')+
       (sensN>0?'<div style="font-size:11px;color:#7A4D9E;margin-top:3px"><i class="ti ti-shield-heart"></i> '+sensN+' sensibilidad'+(sensN!==1?'es':'')+'</div>':'')+
-      (p.foto?'<img src="'+p.foto+'" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:6px">':(p.fotoUrl?'<a href="'+p.fotoUrl+'" target="_blank" style="font-size:11px;color:var(--orange)"><i class="ti ti-photo"></i> Ver foto en Drive</a>':''))+
+      (p.foto?'<img src="'+p.foto+'" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:6px">':(p.fotoThumb?'<img src="'+p.fotoThumb+'" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:6px">'+(p.fotoUrl?'<a href="'+p.fotoUrl+'" target="_blank" style="font-size:10px;color:var(--orange);display:block;margin-top:2px"><i class="ti ti-photo"></i> Ver en alta calidad (Drive)</a>':''):(p.fotoUrl?'<a href="'+p.fotoUrl+'" target="_blank" style="font-size:11px;color:var(--orange)"><i class="ti ti-photo"></i> Ver foto en Drive</a>':'')))+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
         '<button class="btn-sm" style="flex:1" onclick="editarPeligro('+i+')"><i class="ti ti-pencil"></i> Editar</button>'+
         '<button class="btn-sm" style="flex:1;background:'+(p.codigo?'#E8F5E9':'#FEF0E8')+';color:'+(p.codigo?'#2E7D32':'#E8500A')+'" onclick="abrirGabinete('+i+',\'s-peligros\')"><i class="ti ti-microscope"></i> '+(p.codigo?'Reclasificar':'Clasificar')+'</button>'+
@@ -1438,58 +1579,164 @@ function nuevoPeligroObj(){
 }
 let pelStep = 1;
 function pelStepGo(n){
+  // Restaurar vista normal de asistente (por si veníamos de modo edición completa)
+  document.querySelectorAll('.pel-step-navrow').forEach(el=>el.style.display='flex');
+  const guardarRow = document.getElementById('pel-edicion-guardar-row'); if(guardarRow) guardarRow.style.display='none';
+  const ind0 = document.getElementById('pel-step-ind'); if(ind0) ind0.style.display='flex';
   // Validaciones por paso
   if(pelStep===1 && n===2){ if(!pelTmp.gema){ alert('Elige la fuente GEMA'); return; } }
-  if(pelStep===2 && n===3){ pelTmp.descTerreno = document.getElementById('pel-desc').value.trim(); if(!pelTmp.descTerreno){ alert('Describe el peligro'); return; } }
+  if(pelStep===2 && n===3){
+    pelTmp.descTerreno = document.getElementById('pel-desc').value.trim();
+    if(!pelTmp.descTerreno){ alert('Describe el peligro'); return; }
+    const origenSel = document.getElementById('pel-desc-origen');
+    if(origenSel && origenSel.value) pelTmp.descTerreno += ' → ' + origenSel.value;
+  }
   pelStep = n;
   for(let i=1;i<=4;i++){ const el=document.getElementById('pel-step-'+i); if(el) el.style.display = (i===n)?'block':'none'; }
   // Indicador
   const ind = document.getElementById('pel-step-ind');
   if(ind) ind.innerHTML = [1,2,3,4].map(i=>'<div class="pel-dot'+(i===n?' on':'')+(i<n?' done':'')+'"></div>').join('');
   // Al entrar al paso 2, mostrar la fuente elegida
-  if(n===2){ const s=document.getElementById('pel-step2-src'); if(s) s.innerHTML='Fuente: <b style="color:'+gemaColor(pelTmp.gema)+'">'+gemaNombre(pelTmp.gema)+'</b>'; rAyudaMemoria(); }
+  if(n===2){ const s=document.getElementById('pel-step2-src'); if(s) s.innerHTML='Fuente: <b style="color:'+gemaColor(pelTmp.gema)+'">'+gemaNombre(pelTmp.gema)+'</b>'; rAyudaMemoria(); poblarSelectOrigen('pel-desc-origen','— Ninguna —'); }
   window.scrollTo(0,0);
 }
 
-const AYUDA_MEMORIA_GEMA = {
-  gente: [
-    '¿Conoces el procedimiento de trabajo seguro (PTS) para esta tarea?',
-    '¿Has recibido capacitación específica para hacer este trabajo?',
-    '¿Sientes fatiga, apuro o distracción al hacer esta tarea?',
-    '¿Alguien podría tomar un atajo o saltarse un paso por costumbre?',
-    '¿La postura o el esfuerzo físico que exige la tarea te genera molestia?'
-  ],
-  equipos: [
-    '¿La herramienta o equipo tiene alguna falla, desgaste o daño visible?',
-    '¿El equipo está diseñado para esta tarea específica, o es una improvisación?',
-    '¿El equipo cuenta con las protecciones o resguardos de seguridad?',
-    '¿Hay partes móviles, cortantes o a presión en el equipo que uses?',
-    '¿El equipo requiere mantención o calibración que no se ha hecho?'
-  ],
-  materiales: [
-    '¿El material que manipulas es filoso, pesado, caliente o frío?',
-    '¿El material puede liberar polvo, vapores o partículas al manipularlo?',
-    '¿Es una sustancia química (SUSPEL) con riesgo de contacto o inhalación?',
-    '¿El material puede caer, rodar o desestabilizarse mientras lo manipulas?',
-    '¿El material tiene bordes o superficies que puedan cortar o golpear?'
-  ],
-  ambiente: [
-    '¿Cómo es la iluminación del lugar donde se realiza la tarea?',
-    '¿Hay ruido, vibración, calor o frío extremo en el entorno?',
-    '¿El espacio es reducido, elevado o de difícil acceso/salida?',
-    '¿El piso o superficie de trabajo está en buen estado (sin obstáculos, sin resbalar)?',
-    '¿Existen otras personas, vehículos o equipos en movimiento cerca de la tarea?'
-  ]
+const AYUDA_MEMORIA_TIPOS = {
+  gente: {
+    'Capacitación y conocimiento': [
+      '¿Conoces el procedimiento de trabajo seguro (PTS) para esta tarea?',
+      '¿Has recibido capacitación específica y vigente para hacer este trabajo?',
+      '¿Sabes a quién reportar si detectas un peligro durante la tarea?',
+      '¿Entiendes las consecuencias de no seguir el procedimiento establecido?'
+    ],
+    'Carga laboral y ciclos de trabajo': [
+      '¿Sientes fatiga, apuro o distracción al hacer esta tarea?',
+      '¿El tiempo asignado para esta tarea es suficiente o sientes presión?',
+      '¿Haces pausas durante la jornada o el ritmo de trabajo es continuo?',
+      '¿Esta tarea se repite muchas veces al día o a la semana?'
+    ],
+    'Estado físico y psicológico': [
+      '¿La postura o el esfuerzo físico que exige la tarea te genera molestia?',
+      '¿Has tenido algún malestar físico relacionado con esta tarea?',
+      '¿Te sientes en condiciones físicas y mentales adecuadas para este trabajo hoy?',
+      '¿Alguna condición personal (visión, audición, movilidad) podría afectar tu desempeño?'
+    ],
+    'Cumplimiento de procedimientos y atajos': [
+      '¿Alguien podría tomar un atajo o saltarse un paso por costumbre?',
+      '¿Existen prácticas informales que se hacen distinto a lo que dice el procedimiento?',
+      '¿Se respeta siempre el uso de EPP en esta tarea, incluso bajo presión de tiempo?'
+    ],
+    'Supervisión, comunicación y trabajo en equipo': [
+      '¿Recibes instrucciones claras antes de comenzar esta tarea?',
+      '¿Hay buena comunicación con tus compañeros al ejecutar esta tarea?',
+      '¿Sabes qué hacer y a quién avisar en caso de emergencia durante esta tarea?'
+    ]
+  },
+  equipos: {
+    'Estado y mantención': [
+      '¿La herramienta o equipo tiene alguna falla, desgaste o daño visible?',
+      '¿El equipo requiere mantención o calibración que no se ha hecho?',
+      '¿Se revisa el equipo antes de cada uso?'
+    ],
+    'Diseño y adecuación a la tarea': [
+      '¿El equipo está diseñado para esta tarea específica, o es una improvisación?',
+      '¿Existe una herramienta más adecuada que la que se usa habitualmente?',
+      '¿El equipo es del tamaño y capacidad correctos para esta tarea?'
+    ],
+    'Protecciones y resguardos': [
+      '¿El equipo cuenta con las protecciones o resguardos de seguridad?',
+      '¿Los resguardos están siempre instalados o a veces se retiran para trabajar más rápido?',
+      '¿El equipo tiene algún sistema de bloqueo o parada de emergencia?'
+    ],
+    'Energías peligrosas (mecánica, eléctrica, presión, temperatura)': [
+      '¿Hay partes móviles, cortantes o a presión en el equipo que uses?',
+      '¿El equipo trabaja con electricidad, presión neumática/hidráulica o alta temperatura?',
+      '¿Se realiza bloqueo de energía (LOTO) antes de intervenir el equipo?'
+    ],
+    'Ergonomía y uso prolongado': [
+      '¿El equipo genera vibración, ruido o esfuerzo repetitivo al usarlo?',
+      '¿El peso o la forma del equipo dificulta su manejo?'
+    ]
+  },
+  materiales: {
+    'Propiedades físicas (peso, filo, temperatura)': [
+      '¿El material que manipulas es filoso, pesado, caliente o frío?',
+      '¿El material puede caer, rodar o desestabilizarse mientras lo manipulas?',
+      '¿El material tiene bordes o superficies que puedan cortar o golpear?'
+    ],
+    'Propiedades químicas y SUSPEL': [
+      '¿Es una sustancia química (SUSPEL) con riesgo de contacto o inhalación?',
+      '¿El material puede liberar polvo, vapores o partículas al manipularlo?',
+      '¿Conoces los efectos en la salud de esta sustancia si hay exposición?'
+    ],
+    'Almacenamiento y manipulación': [
+      '¿El material se almacena de forma correcta y segura?',
+      '¿Se requiere algún EPP específico para manipular este material?',
+      '¿Existe procedimiento de trasvasije o manipulación para esta sustancia?'
+    ],
+    'Estabilidad, apilamiento y contención': [
+      '¿El material está apilado o contenido de forma estable?',
+      '¿Existe riesgo de derrame o fuga de este material?'
+    ],
+    'Etiquetado e información de seguridad': [
+      '¿El envase o contenedor está correctamente etiquetado?',
+      '¿Existe hoja de datos de seguridad (SDS) disponible para este material?'
+    ]
+  },
+  ambiente: {
+    'Condiciones físicas del entorno (luz, ruido, clima)': [
+      '¿Cómo es la iluminación del lugar donde se realiza la tarea?',
+      '¿Hay ruido, vibración, calor o frío extremo en el entorno?',
+      '¿Las condiciones climáticas (viento, lluvia, nieve) afectan esta tarea?'
+    ],
+    'Orden, aseo y superficies de trabajo': [
+      '¿El piso o superficie de trabajo está en buen estado (sin obstáculos, sin resbalar)?',
+      '¿El área de trabajo está ordenada y despejada de elementos innecesarios?',
+      '¿Hay derrames, líquidos o residuos en el suelo del área?'
+    ],
+    'Espacio de trabajo (confinado, altura, acceso, salida)': [
+      '¿El espacio es reducido, elevado o de difícil acceso/salida?',
+      '¿Existen vías de escape claras en caso de emergencia en este lugar?',
+      '¿Se trabaja en altura o en espacios confinados en esta tarea?'
+    ],
+    'Interacción con vehículos, aeronaves y terceros': [
+      '¿Existen otras personas, vehículos o equipos en movimiento cerca de la tarea?',
+      '¿Hay riesgo de interacción con aeronaves en operación durante esta tarea?',
+      '¿Se coordina con otras áreas o turnos que trabajan en el mismo espacio?'
+    ],
+    'Señalización, vías de evacuación y emergencia': [
+      '¿El área cuenta con señalización adecuada de riesgos?',
+      '¿Sabes dónde están los elementos de emergencia (extintores, botiquín) más cercanos?'
+    ]
+  }
 };
-function rAyudaMemoria(){
+function todasPreguntasGema(gema){
+  const tipos = AYUDA_MEMORIA_TIPOS[gema];
+  if(!tipos) return [];
+  let out = [];
+  Object.keys(tipos).forEach(tipo=>{ tipos[tipo].forEach(q=>out.push({tipo,q})); });
+  return out;
+}
+function obtenerPreguntasAleatorias(gema, n){
+  n = n||5;
+  const todas = todasPreguntasGema(gema);
+  const barajadas = todas.slice().sort(()=>Math.random()-0.5);
+  return barajadas.slice(0, n);
+}
+function renderBloqueAyudaMemoria(preguntas, gema){
+  if(!preguntas || preguntas.length===0) return '';
+  return '<div style="display:flex;flex-direction:column;gap:4px">'+
+    preguntas.map(item=>'<div style="font-size:12px;color:#555;background:var(--surface2);padding:6px 10px;border-radius:8px;border-left:3px solid '+gemaColor(gema)+'"><span style="font-size:10px;color:var(--muted);text-transform:uppercase;display:block">'+item.tipo+'</span>'+item.q+'</div>').join('')+
+    '</div>';
+}
+let ayudaMemoriaActual = [];
+function rAyudaMemoria(regenerar){
   const cont = document.getElementById('pel-ayuda-memoria');
   if(!cont) return;
-  const preguntas = AYUDA_MEMORIA_GEMA[pelTmp.gema];
-  if(!preguntas){ cont.innerHTML=''; return; }
-  cont.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px"><i class="ti ti-bulb"></i> Preguntas de ayuda memoria — '+gemaNombre(pelTmp.gema)+':</div>'+
-    '<div style="display:flex;flex-direction:column;gap:4px">'+
-    preguntas.map(q=>'<div style="font-size:12px;color:#555;background:var(--surface2);padding:6px 10px;border-radius:8px;border-left:3px solid '+gemaColor(pelTmp.gema)+'">'+q+'</div>').join('')+
-    '</div>';
+  if(!AYUDA_MEMORIA_TIPOS[pelTmp.gema]){ cont.innerHTML=''; return; }
+  if(regenerar || ayudaMemoriaActual.length===0) ayudaMemoriaActual = obtenerPreguntasAleatorias(pelTmp.gema, 5);
+  cont.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center"><span><i class="ti ti-bulb"></i> Preguntas de ayuda memoria — '+gemaNombre(pelTmp.gema)+'</span><span style="cursor:pointer;color:var(--orange);white-space:nowrap" onclick="rAyudaMemoria(true)"><i class="ti ti-refresh"></i> Otras</span></div>'+
+    renderBloqueAyudaMemoria(ayudaMemoriaActual, pelTmp.gema);
 }
 
 function abrirNuevoPeligro(){
@@ -1513,8 +1760,21 @@ function editarPeligro(i){
   const cs = document.getElementById('pel-control-sug'); if(cs) cs.value = pelTmp.controlSugerido||'';
   renderCtxBar('pel-ctx');
   rGemaGrid(); rPelSens(); rJerarquiaSug();
+  poblarSelectOrigen('pel-desc-origen','— Ninguna —');
   gt('s-peligro-frm');
-  pelStepGo(1);
+  mostrarEdicionCompleta();
+}
+function mostrarEdicionCompleta(){
+  document.getElementById('pel-step-ind').style.display='none';
+  document.getElementById('pel-step-1').style.display='none';
+  document.getElementById('pel-step-2').style.display='block';
+  document.getElementById('pel-step-3').style.display='block';
+  document.getElementById('pel-step-4').style.display='block';
+  document.querySelectorAll('.pel-step-navrow').forEach(n=>n.style.display='none');
+  document.getElementById('pel-edicion-guardar-row').style.display='flex';
+  const fSrc = document.getElementById('pel-step2-src');
+  if(fSrc) fSrc.innerHTML = 'Fuente: <b style="color:'+gemaColor(pelTmp.gema)+'">'+gemaNombre(pelTmp.gema)+'</b>';
+  window.scrollTo(0,0);
 }
 function delPeligro(i){ if(!confirm('¿Eliminar este peligro?'))return; entrevista.peligros.splice(i,1); rPeligros(); }
 
@@ -1532,16 +1792,36 @@ function rGemaGrid(){
     hintEl.style.display = f ? 'block' : 'none';
   }
 }
-function selGema(id){ pelTmp.gema=id; rGemaGrid(); }
+function poblarSelectOrigen(selectId, placeholder){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const actual = sel.value;
+  const opciones = (entrevista.herramientas||[]).concat(entrevista.suspel||[]);
+  sel.innerHTML = '<option value="">'+placeholder+'</option>'+opciones.map(o=>'<option'+(o===actual?' selected':'')+'>'+o+'</option>').join('');
+}
+function selGema(id){
+  pelTmp.gema=id; ayudaMemoriaActual=[]; rGemaGrid();
+  const box = document.getElementById('pel-rapido-box');
+  if(box){ box.style.display='block'; rPelRapidoChat(); rAyudaMemoriaRapido(); poblarSelectOrigen('pel-rapido-origen','— ¿Herramienta o sustancia relacionada? (opcional) —'); }
+}
 
 // ═══════════════ MODO RÁPIDO: agregar varios peligros seguidos (estilo chat) ═══════════════
 let pelRapidoAgregados = [];
+let ayudaMemoriaRapido = [];
+function rAyudaMemoriaRapido(regenerar){
+  const cont = document.getElementById('pel-rapido-ayuda');
+  if(!cont) return;
+  if(!AYUDA_MEMORIA_TIPOS[pelTmp.gema]){ cont.innerHTML=''; return; }
+  if(regenerar || ayudaMemoriaRapido.length===0) ayudaMemoriaRapido = obtenerPreguntasAleatorias(pelTmp.gema, 5);
+  cont.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center"><span><i class="ti ti-bulb"></i> Ayuda memoria — '+gemaNombre(pelTmp.gema)+'</span><span style="cursor:pointer;color:var(--orange);white-space:nowrap" onclick="rAyudaMemoriaRapido(true)"><i class="ti ti-refresh"></i> Otras</span></div>'+
+    renderBloqueAyudaMemoria(ayudaMemoriaRapido, pelTmp.gema);
+}
 function toggleModoRapido(){
   if(!pelTmp.gema){ alert('Elige la fuente GEMA primero'); return; }
   const box = document.getElementById('pel-rapido-box');
   const abrir = box.style.display==='none';
   box.style.display = abrir?'block':'none';
-  if(abrir) rPelRapidoChat();
+  if(abrir){ rPelRapidoChat(); rAyudaMemoriaRapido(); poblarSelectOrigen('pel-rapido-origen','— ¿Herramienta o sustancia relacionada? (opcional) —'); }
 }
 function agregarPeligroRapido(){
   const inp = document.getElementById('pel-rapido-input');
@@ -1549,11 +1829,13 @@ function agregarPeligroRapido(){
   if(!txt) return;
   const nuevo = nuevoPeligroObj();
   nuevo.gema = pelTmp.gema;
-  nuevo.descTerreno = txt;
+  const origenSel = document.getElementById('pel-rapido-origen');
+  nuevo.descTerreno = txt + (origenSel && origenSel.value ? ' → '+origenSel.value : '');
   entrevista.peligros.push(nuevo);
   pelRapidoAgregados.push(nuevo);
   inp.value='';
   rPelRapidoChat();
+  rAyudaMemoriaRapido(true);
 }
 function rPelRapidoChat(){
   const el = document.getElementById('pel-rapido-chat');
@@ -1599,16 +1881,21 @@ function toggleSens(id){
 function onFotoPeligro(inp){
   if(!inp.files||!inp.files[0])return;
   comprimir(inp.files[0],(d)=>{ pelTmp.foto=d; document.getElementById('pel-foto-prev').innerHTML='<img src="'+d+'" style="width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-top:8px">'; });
+  comprimirMiniatura(inp.files[0],(t)=>{ pelTmp.fotoThumb=t; });
 }
 function guardarPeligro(){
-  pelTmp.descTerreno = document.getElementById('pel-desc').value.trim() || pelTmp.descTerreno;
+  const descVal = document.getElementById('pel-desc').value.trim();
+  if(descVal){
+    pelTmp.descTerreno = descVal;
+    const origenSel = document.getElementById('pel-desc-origen');
+    if(origenSel && origenSel.value && !pelTmp.descTerreno.includes(' → '+origenSel.value)) pelTmp.descTerreno += ' → ' + origenSel.value;
+  }
   pelTmp.controlSugerido = document.getElementById('pel-control-sug').value.trim();
   if(!pelTmp.gema){ alert('Selecciona la fuente GEMA'); pelStepGo(1); return; }
   if(!pelTmp.descTerreno){ alert('Describe el peligro'); pelStepGo(2); return; }
   if(pelEditIdx!==null) entrevista.peligros[pelEditIdx] = pelTmp;
   else entrevista.peligros.push(pelTmp);
   const idxGuardado = pelEditIdx!==null ? pelEditIdx : entrevista.peligros.length-1;
-  if(pelTmp.foto) encolarFotoPendiente(entrevista.id, 'peligro_'+idxGuardado, pelTmp.foto);
   rPeligros();
   gt('s-peligros');
 }
@@ -1620,6 +1907,7 @@ function abrirGabinete(peligroIdx, back){
   gabCtx.peligroIdx = peligroIdx;
   gabCtx.back = back || 's-peligros';
   const p = entrevista.peligros[peligroIdx];
+  document.getElementById('gab-tarea').textContent = 'Tarea: ' + (entrevista.tarea || '(sin tarea)');
   document.getElementById('gab-desc').textContent = gemaNombre(p.gema) + ': ' + (p.descTerreno||'');
   document.getElementById('gab-back').onclick = ()=>gt(gabCtx.back);
 
@@ -1629,7 +1917,7 @@ function abrirGabinete(peligroIdx, back){
 
   // Protocolos
   const protoSel = document.getElementById('gab-protocolo');
-  protoSel.innerHTML = '<option value="">Seleccionar...</option>' + PROTOCOLOS.map(pr=>'<option value="'+pr+'"'+(p.protocolo===pr?' selected':'')+'>'+pr+'</option>').join('') + '<option value="Otro"'+(p.protocolo==='Otro'?' selected':'')+'>Otro</option>';
+  protoSel.innerHTML = '<option value="">Seleccionar...</option>' + PROTOCOLOS.map(pr=>'<option value="'+pr+'"'+(p.protocolo===pr?' selected':'')+'>'+pr+'</option>').join('') + '<option value="Sin protocolo específico (evaluación cualitativa)"'+(p.protocolo==='Sin protocolo específico (evaluación cualitativa)'?' selected':'')+'>Sin protocolo específico (evaluación cualitativa)</option><option value="Otro"'+(p.protocolo==='Otro'?' selected':'')+'>Otro</option>';
 
   // Si ya tiene datos, reconstruir cascada
   if(p.categoria){ gabCatChange(true); if(p.familia){ gabFamiliaChange(true); if(p.codigo){ document.getElementById('gab-riesgo').value=p.codigo; gabRiesgoChange(true); } } }
@@ -1729,7 +2017,62 @@ function renderProbCons(){
 function selProb(v){ gabProb=v; renderProbCons(); }
 function selCons(v){ gabCons=v; renderProbCons(); }
 function calcNivel(vep){ if(vep>=16)return'Intolerable'; if(vep>=8)return'Importante'; if(vep>=4)return'Moderado'; return'Tolerable'; }
+function exportarSeguimientoPDF(){
+  const items = getControlesGlobal(segFiltro==='Todos'?null:segFiltro);
+  if(items.length===0){ alert('No hay controles para exportar en este filtro.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p','mm','a4');
+  const PW=210, PH=297, M=14;
+  let y=M+6;
+  function san2(s){ return String(s==null?'':s).replace(/→/g,'->'); }
+  function checkPage(need){ if(y+need>PH-16){ doc.addPage(); y=M+6; } }
+
+  doc.setFillColor(15,76,129); doc.rect(0,0,PW,18,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('REPORTE DE SEGUIMIENTO DE CONTROLES', PW/2, 11, {align:'center'});
+  doc.setTextColor(0,0,0); y=28;
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Filtro: '+segFiltro+'   ·   Generado: '+hoy()+'   ·   '+(usuarioActivo?usuarioActivo.nombre:''), M, y); y+=8;
+
+  const estCol = {'Pendiente':[198,40,40],'En proceso':[239,108,0],'Ejecutado':[15,76,129],'Verificado':[42,125,70]};
+  items.forEach(it=>{
+    checkPage(30);
+    const col = estCol[it.estado]||[120,120,120];
+    doc.setFillColor(...col); doc.rect(M,y-4,3,16,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+    const tit=doc.splitTextToSize(san2(it.texto), PW-2*M-6); doc.text(tit, M+6, y); y+=tit.length*4.5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...col);
+    doc.text(san2(it.estado)+(it.fechaEstado?' · '+san2(it.fechaEstado):''), M+6, y); y+=4;
+    doc.setTextColor(90,90,90);
+    doc.text(san2(it.jerarquia||'Sin jerarquía')+' · '+san2(it.trabNombre)+' · '+san2(it.tarea)+' · '+san2(it.fecha), M+6, y); y+=5;
+    (it.evidencias||[]).forEach(ev=>{
+      if(ev.tipo==='comentario'){
+        checkPage(8);
+        doc.setTextColor(60,60,60); doc.setFont('helvetica','italic'); doc.setFontSize(8);
+        const c=doc.splitTextToSize('• '+san2(ev.estado)+' ('+san2(ev.fecha)+'): '+san2(ev.texto), PW-2*M-10);
+        doc.text(c, M+10, y); y+=c.length*4; doc.setFont('helvetica','normal');
+      } else if(ev.tipo==='foto' && (ev.foto||ev.fotoThumb)){
+        checkPage(45);
+        try{
+          const imgEv = ev.foto||ev.fotoThumb;
+          const props=doc.getImageProperties(imgEv);
+          const w=60, h=Math.min(w*props.height/props.width, 40);
+          doc.addImage(imgEv,'JPEG',M+10,y,w,h);
+          doc.setFontSize(7); doc.setTextColor(120,120,120);
+          doc.text(san2(ev.estado)+' · '+san2(ev.fecha), M+10+w+4, y+5); y+=h+3;
+        }catch(err){}
+      } else if(ev.tipo==='foto' && ev.fotoUrl){
+        checkPage(6); doc.setFontSize(8); doc.setTextColor(232,80,10);
+        doc.text('• Foto en Drive: '+san2(ev.fotoUrl), M+10, y); y+=4;
+      }
+    });
+    doc.setTextColor(0,0,0);
+    y+=3; doc.setDrawColor(225,225,225); doc.line(M,y-1,PW-M,y-1); y+=3;
+  });
+  doc.save('Seguimiento_controles_'+hoy()+'.pdf');
+}
 function nivelColor(n){ return {'Intolerable':'#C62828','Importante':'#EF6C00','Moderado':'#F9A825','Tolerable':'#2E7D32'}[n]||'#999'; }
+function nivelColorRGB(n){ return {'Intolerable':[198,40,40],'Importante':[239,108,0],'Moderado':[201,145,0],'Tolerable':[46,125,50]}[n]||[0,0,0]; }
 function updateVEP(){
   const box = document.getElementById('gab-vep-box');
   if(!box) return;
@@ -1761,7 +2104,7 @@ function rGabControles(){
         '<span class="jer-badge" style="background:'+ecol+';margin-left:4px">'+est+'</span>'+
         '<div style="font-size:13px;margin-top:4px">'+c.texto+'</div>'+
         '<select style="margin-top:6px;font-size:11px;padding:4px" onchange="cambiarEstadoControl('+i+',this.value)">'+
-          ['Pendiente','Ejecutado','Verificado'].map(e=>'<option value="'+e+'"'+(est===e?' selected':'')+'>'+e+'</option>').join('')+
+          ['Pendiente','En proceso','Ejecutado','Verificado'].map(e=>'<option value="'+e+'"'+(est===e?' selected':'')+'>'+e+'</option>').join('')+
         '</select></div>'+
         '<div class="mini-btn danger" onclick="delControl('+i+')"><i class="ti ti-x"></i></div></div>';
     }).join('');
@@ -1783,22 +2126,39 @@ function encolarFotoPendiente(entrevistaId, campo, base64){
 function aplicarUrlFoto(entrevistaId, campo, url){
   if(entrevista && entrevista.id===entrevistaId){
     if(campo==='tarea'){ entrevista.fotoTarea=null; entrevista.fotoTareaUrl=url; }
-    else { const m=campo.match(/^peligro_(\d+)$/); if(m && entrevista.peligros[m[1]]){ entrevista.peligros[m[1]].foto=null; entrevista.peligros[m[1]].fotoUrl=url; } }
+    else {
+      const m=campo.match(/^peligro_(\d+)$/);
+      const mc=campo.match(/^controlEvid_(\d+)_(\d+)_(\d+)$/);
+      if(m && entrevista.peligros[m[1]]){ entrevista.peligros[m[1]].foto=null; entrevista.peligros[m[1]].fotoUrl=url; }
+      else if(mc && entrevista.peligros[mc[1]] && entrevista.peligros[mc[1]].controles[mc[2]] && entrevista.peligros[mc[1]].controles[mc[2]].evidencias[mc[3]]){
+        const ev = entrevista.peligros[mc[1]].controles[mc[2]].evidencias[mc[3]];
+        ev.foto=null; ev.fotoUrl=url;
+      }
+    }
   }
   db = JSON.parse(localStorage.getItem(DK)||'[]');
   const idx = db.findIndex(x=>x.id===entrevistaId);
   if(idx>=0){
     if(campo==='tarea'){ db[idx].fotoTarea=null; db[idx].fotoTareaUrl=url; }
-    else { const m=campo.match(/^peligro_(\d+)$/); if(m && db[idx].peligros[m[1]]){ db[idx].peligros[m[1]].foto=null; db[idx].peligros[m[1]].fotoUrl=url; } }
+    else {
+      const m=campo.match(/^peligro_(\d+)$/);
+      const mc=campo.match(/^controlEvid_(\d+)_(\d+)_(\d+)$/);
+      if(m && db[idx].peligros[m[1]]){ db[idx].peligros[m[1]].foto=null; db[idx].peligros[m[1]].fotoUrl=url; }
+      else if(mc && db[idx].peligros[mc[1]] && db[idx].peligros[mc[1]].controles[mc[2]] && db[idx].peligros[mc[1]].controles[mc[2]].evidencias[mc[3]]){
+        const ev = db[idx].peligros[mc[1]].controles[mc[2]].evidencias[mc[3]];
+        ev.foto=null; ev.fotoUrl=url;
+      }
+    }
     localStorage.setItem(DK, JSON.stringify(db));
   }
 }
-function intentarSubirFotosPendientes(){
-  if(!usuarioActivo || !usuarioActivo.sheetUrl) return;
+function intentarSubirFotosPendientes(onDone){
+  if(!usuarioActivo || !usuarioActivo.sheetUrl){ if(onDone) onDone({error:'no-url'}); return; }
   let cola = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
-  if(cola.length===0){ rFotosPendientesBadge(); return; }
+  if(cola.length===0){ rFotosPendientesBadge(); if(onDone) onDone({subidas:0, fallidas:0, total:0}); return; }
+  let pendientes = cola.length, subidas = 0, fallidas = 0, ultimoError = '';
   cola.forEach(item=>{
-    const carpeta = item.entrevistaId; // subcarpeta = ID de la entrevista (única y ya viaja a Sheets)
+    const carpeta = item.entrevistaId;
     fetch(usuarioActivo.sheetUrl, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -1809,17 +2169,31 @@ function intentarSubirFotosPendientes(){
         let colaAct = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
         colaAct = colaAct.filter(x=>!(x.entrevistaId===item.entrevistaId && x.campo===item.campo));
         localStorage.setItem(FOTOS_PEND_KEY, JSON.stringify(colaAct));
-        rFotosPendientesBadge();
-      }
-    }).catch(()=>{ /* sin señal o el .gs no tiene el endpoint aún: sigue pendiente, se reintenta después */ });
+        subidas++;
+      } else { fallidas++; ultimoError = (res && res.error) ? res.error : 'respuesta inesperada del servidor'; }
+      rFotosPendientesBadge();
+      if(--pendientes===0 && onDone) onDone({subidas, fallidas, total:cola.length, ultimoError});
+    }).catch(err=>{
+      fallidas++; ultimoError = 'sin conexión con el servidor (o el Apps Script no tiene la función subirFoto)';
+      rFotosPendientesBadge();
+      if(--pendientes===0 && onDone) onDone({subidas, fallidas, total:cola.length, ultimoError});
+    });
   });
 }
 function rFotosPendientesBadge(){
   const cola = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
   const el = document.getElementById('fotos-pend-badge');
-  if(el) el.textContent = cola.length>0 ? ('📷 '+cola.length+' foto'+(cola.length!==1?'s':'')+' pendiente'+(cola.length!==1?'s':'')+' de subir a Drive') : '';
+  if(el) el.textContent = cola.length>0 ? ('📷 '+cola.length+' foto'+(cola.length!==1?'s':'')+' de evidencia (seguimiento) pendiente'+(cola.length!==1?'s':'')+' de subir — tocar para reintentar') : '';
 }
-function reintentarFotosPendientes(){ intentarSubirFotosPendientes(); alert('Reintentando subida de fotos pendientes...'); }
+function reintentarFotosPendientes(){
+  if(!usuarioActivo || !usuarioActivo.sheetUrl){ alert('Primero configura la URL del Google Sheet en tu perfil.'); return; }
+  intentarSubirFotosPendientes((r)=>{
+    if(r.error==='no-url'){ alert('Falta la URL del Google Sheet en tu perfil.'); return; }
+    if(r.total===0){ alert('No hay fotos pendientes.'); return; }
+    if(r.fallidas===0) alert('Listo: '+r.subidas+' foto(s) subida(s) a Drive correctamente.');
+    else alert('Subidas: '+r.subidas+' de '+r.total+'.\nFallaron: '+r.fallidas+'.\n\nMotivo: '+r.ultimoError+'\n\nSi es la primera vez, revisa que tu Apps Script tenga la función "subirFoto" y que hayas autorizado el permiso de Drive (ejecuta el script una vez desde el editor de Apps Script para autorizarlo).');
+  });
+}
 
 function jerColor(j){ return {'Eliminación':'#C62828','Sustitución':'#EF6C00','Ingeniería':'#0F4C81','Administrativo':'#2A7D46','EPP':'#7A4D9E'}[j]||'#999'; }
 // Dibuja una imagen respetando su proporción real, ajustada dentro de una caja máxima (sin estirar) y centrada en ella
@@ -1832,8 +2206,20 @@ function addImgFit(doc, dataUrl, format, x, y, maxW, maxH){
     doc.addImage(dataUrl, format, x + (maxW-w)/2, y + (maxH-h)/2, w, h);
   }catch(err){}
 }
+// Dibuja la firma centrada horizontalmente en xCenter, cruzando la línea en lineY
+// una fracción "cruce" de su alto resultante (0.35 = como firma manuscrita real, igual que en DAP-Seguridad)
+function addFirmaSobreLinea(doc, dataUrl, format, xCenter, lineY, maxW, maxH, cruce){
+  cruce = cruce===undefined ? 0.35 : cruce;
+  try{
+    const props = doc.getImageProperties(dataUrl);
+    const ratio = props.width / props.height;
+    let w = maxW, h = maxW/ratio;
+    if(h > maxH){ h = maxH; w = maxH*ratio; }
+    doc.addImage(dataUrl, format, xCenter - w/2, lineY - h*(1-cruce), w, h);
+  }catch(err){}
+}
 function selCtrlJer(j){ gabCtrlJerSel = (gabCtrlJerSel===j?'':j); rGabControles(); }
-function estadoColor(e){ return {'Pendiente':'#C62828','Ejecutado':'#EF6C00','Verificado':'#2A7D46'}[e]||'#999'; }
+function estadoColor(e){ return {'Pendiente':'#C62828','En proceso':'#EF6C00','Ejecutado':'#0F4C81','Verificado':'#2A7D46'}[e]||'#999'; }
 function cambiarEstadoControl(i,nuevoEstado){
   const p = entrevista.peligros[gabCtx.peligroIdx];
   if(!p||!p.controles||!p.controles[i]) return;
@@ -1853,7 +2239,7 @@ function getControlesGlobal(filtro){
         const estado = c.estado || 'Pendiente';
         if(filtro && filtro!=='Todos' && estado!==filtro) return;
         out.push({ entrevistaId:e.id, peligroIdx:pi, controlIdx:ci, texto:c.texto, jerarquia:c.jerarquia,
-          estado, fechaEstado:c.fechaEstado||'', tarea:e.tarea||'(sin tarea)', trabNombre:e.trabNombre||'', fecha:e.fecha||'' });
+          estado, fechaEstado:c.fechaEstado||'', tarea:e.tarea||'(sin tarea)', trabNombre:e.trabNombre||'', fecha:e.fecha||'', evidencias:c.evidencias||[] });
       });
     });
   });
@@ -1877,6 +2263,52 @@ function setEstadoControlGlobal(entrevistaId, peligroIdx, controlIdx, nuevoEstad
   rHome();
 }
 let segAbiertos = new Set();
+function agregarComentarioControl(entrevistaId, peligroIdx, controlIdx){
+  const texto = prompt('Comentario / evidencia de texto:');
+  if(!texto || !texto.trim()) return;
+  const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+  const idx = dbAll.findIndex(x=>x.id===entrevistaId);
+  if(idx<0) return;
+  const p = dbAll[idx].peligros[peligroIdx];
+  if(!p||!p.controles||!p.controles[controlIdx]) return;
+  const c = p.controles[controlIdx];
+  c.evidencias = c.evidencias || [];
+  c.evidencias.push({ tipo:'comentario', texto:texto.trim(), fecha:hoy(), estado:c.estado||'Pendiente' });
+  localStorage.setItem(DK, JSON.stringify(dbAll));
+  if(entrevista && entrevista.id===entrevistaId && entrevista.peligros[peligroIdx] && entrevista.peligros[peligroIdx].controles[controlIdx]){
+    entrevista.peligros[peligroIdx].controles[controlIdx].evidencias = JSON.parse(JSON.stringify(c.evidencias));
+  }
+  rSeguimiento(segFiltro);
+}
+let fotoControlCtx = null;
+function pedirFotoControl(entrevistaId, peligroIdx, controlIdx){
+  fotoControlCtx = { entrevistaId, peligroIdx, controlIdx };
+  document.getElementById('control-foto-input').click();
+}
+function onFotoControl(inp){
+  if(!inp.files || !inp.files[0] || !fotoControlCtx) return;
+  const ctx = fotoControlCtx;
+  comprimirMiniatura(inp.files[0], (thumb)=>{
+  comprimir(inp.files[0], (d)=>{
+    const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+    const idx = dbAll.findIndex(x=>x.id===ctx.entrevistaId);
+    if(idx<0) return;
+    const p = dbAll[idx].peligros[ctx.peligroIdx];
+    if(!p||!p.controles||!p.controles[ctx.controlIdx]) return;
+    const c = p.controles[ctx.controlIdx];
+    c.evidencias = c.evidencias || [];
+    const evIdx = c.evidencias.length;
+    c.evidencias.push({ tipo:'foto', foto:d, fotoThumb:thumb, fotoUrl:null, fecha:hoy(), estado:c.estado||'Pendiente' });
+    localStorage.setItem(DK, JSON.stringify(dbAll));
+    if(entrevista && entrevista.id===ctx.entrevistaId && entrevista.peligros[ctx.peligroIdx] && entrevista.peligros[ctx.peligroIdx].controles[ctx.controlIdx]){
+      entrevista.peligros[ctx.peligroIdx].controles[ctx.controlIdx].evidencias = JSON.parse(JSON.stringify(c.evidencias));
+    }
+    encolarFotoPendiente(ctx.entrevistaId, 'controlEvid_'+ctx.peligroIdx+'_'+ctx.controlIdx+'_'+evIdx, d);
+    rSeguimiento(segFiltro);
+  });
+  });
+  inp.value='';
+}
 function toggleGrupoSeg(id){
   if(segAbiertos.has(id)) segAbiertos.delete(id); else segAbiertos.add(id);
   rSeguimiento(segFiltro);
@@ -1906,14 +2338,27 @@ function rSeguimiento(filtro){
     const rows = g.items.map(it=>{
       const col = estadoColor(it.estado);
       let btns = '';
-      if(it.estado==='Pendiente') btns = '<div class="mini-btn" style="color:#E8500A" title="Marcar ejecutado" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-check"></i></div>';
-      else if(it.estado==='Ejecutado') btns = '<div class="mini-btn" style="color:#2A7D46" title="Verificar" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Verificado\')"><i class="ti ti-shield-check"></i></div>'+
+      if(it.estado==='Pendiente') btns = '<div class="mini-btn" style="color:#EF6C00" title="Marcar en proceso" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'En proceso\')"><i class="ti ti-player-play"></i></div>';
+      else if(it.estado==='En proceso') btns = '<div class="mini-btn" style="color:#0F4C81" title="Marcar ejecutado" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-check"></i></div>'+
         '<div class="mini-btn" title="Revertir a pendiente" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Pendiente\')"><i class="ti ti-arrow-back-up"></i></div>';
+      else if(it.estado==='Ejecutado') btns = '<div class="mini-btn" style="color:#2A7D46" title="Verificar" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Verificado\')"><i class="ti ti-shield-check"></i></div>'+
+        '<div class="mini-btn" title="Revertir a en proceso" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'En proceso\')"><i class="ti ti-arrow-back-up"></i></div>';
       else btns = '<div class="mini-btn" title="Reabrir" onclick="setEstadoControlGlobal(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+',\'Ejecutado\')"><i class="ti ti-arrow-back-up"></i></div>';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">'+
+      btns += '<div class="mini-btn" title="Agregar comentario" onclick="agregarComentarioControl(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+')"><i class="ti ti-message-plus"></i></div>';
+      if(it.estado==='En proceso') btns += '<div class="mini-btn" title="Agregar foto de avance" onclick="pedirFotoControl(\''+it.entrevistaId+'\','+it.peligroIdx+','+it.controlIdx+')"><i class="ti ti-camera"></i></div>';
+      const evidenciasHtml = (it.evidencias||[]).length===0 ? '' : '<div style="margin:4px 0 0 16px;display:flex;flex-direction:column;gap:4px">'+
+        it.evidencias.map(ev=>{
+          if(ev.tipo==='foto'){
+            const src = ev.foto||ev.fotoUrl;
+            return '<div style="font-size:11px;color:var(--muted)"><i class="ti ti-camera"></i> '+san(ev.estado)+' · '+san(ev.fecha)+(src?' — <a href="'+src+'" target="_blank" style="color:var(--orange)">ver foto</a>':' (subiendo...)')+'</div>';
+          }
+          return '<div style="font-size:11px;color:#555;background:var(--surface2);border-radius:6px;padding:4px 8px"><span style="color:var(--muted)">'+san(ev.estado)+' · '+san(ev.fecha)+':</span> '+san(ev.texto)+'</div>';
+        }).join('')+'</div>';
+      return '<div style="padding:8px 0;border-top:1px solid var(--border)">'+
+        '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">'+
         '<div style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
-        '<div style="flex:1;font-size:12px"><div>'+san(it.texto)+'</div><div style="color:var(--muted);font-size:11px">'+san(it.jerarquia||'Sin jerarquía')+' · '+it.estado+(it.fechaEstado?' · '+san(it.fechaEstado):'')+'</div></div>'+
-        '<div style="display:flex;gap:4px">'+btns+'</div></div>';
+        '<div style="flex:1;min-width:140px;font-size:12px"><div>'+san(it.texto)+'</div><div style="color:var(--muted);font-size:11px">'+san(it.jerarquia||'Sin jerarquía')+' · '+it.estado+(it.fechaEstado?' · '+san(it.fechaEstado):'')+'</div></div>'+
+        '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap">'+btns+'</div></div>'+evidenciasHtml+'</div>';
     }).join('');
     return '<div class="card" style="padding-bottom:'+(abierto?'8px':'0')+'">'+
       '<div class="card-row" style="cursor:pointer" onclick="toggleGrupoSeg(\''+g.id+'\')">'+
@@ -2167,14 +2612,14 @@ function onFirmaPerfil(inp){
 let catActiveTab = 'macro';
 function catTab(t){
   catActiveTab = t;
-  ['macro','esp','procesos','tareas','herr','sens','cargos','epp'].forEach(x=>{
+  ['macro','esp','procesos','tareas','herr','suspel','sens','cargos','epp'].forEach(x=>{
     document.getElementById('ctab-'+x).classList.toggle('active', x===t);
   });
   rCatBody();
 }
 function rCatBody(){
   const el = document.getElementById('cat-body');
-  const map = {macro:rCatMacro, esp:rCatEsp, procesos:rCatProcesos, tareas:rCatTareas, herr:rCatHerr, sens:rCatSens, cargos:rCatCargos, epp:rCatEpp};
+  const map = {macro:rCatMacro, esp:rCatEsp, procesos:rCatProcesos, tareas:rCatTareas, herr:rCatHerr, suspel:rCatSuspel, sens:rCatSens, cargos:rCatCargos, epp:rCatEpp};
   el.innerHTML = (map[catActiveTab]||rCatMacro)();
 }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
@@ -2343,6 +2788,56 @@ function editHerrCat(id){ const h=CAT.herramientas.find(x=>x.id===id); const n=p
 function delHerrCat(id){
   CAT.tareas.forEach(t=>{ t.herrIds=(t.herrIds||[]).filter(h=>h!==id); });
   CAT.herramientas=CAT.herramientas.filter(h=>h.id!==id); saveCat(); rCatBody();
+}
+
+// ---- SUSTANCIAS PERSONALIZADAS (agregadas con "+Otro" durante la entrevista) ----
+function rCatSuspel(){
+  CAT.suspel = CAT.suspel || [];
+  let h = '<div style="display:flex;gap:8px;margin-bottom:12px">';
+  h += '<input type="text" id="new-suspel" placeholder="Nueva sustancia" style="flex:1;margin-bottom:0" onkeydown="if(event.key===`Enter`)addSuspelCat()">';
+  h += '<button class="btn-icon-add" onclick="addSuspelCat()"><i class="ti ti-plus"></i></button></div>';
+  if(CAT.suspel.length===0) h += emptyMsg('Sin sustancias en catálogo.');
+  CAT.suspel.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(s=>{
+    const tieneHDS = !!(s.vias||s.consecuencias||s.almacenamiento||s.incompatibilidad||s.medidas||s.epp);
+    h += '<div class="cat-item"><div class="cat-item-main"><div class="cat-item-title">'+s.nombre+'</div>';
+    h += '<div class="cat-item-sub">'+(tieneHDS?'<i class="ti ti-file-check" style="color:#2A7D46"></i> Con datos HDS':'<i class="ti ti-file-off" style="color:var(--muted)"></i> Sin datos HDS todavía')+'</div></div>';
+    h += '<div class="mini-btn" onclick="abrirEditarSuspel(\''+s.id+'\')" title="Editar ficha HDS"><i class="ti ti-file-text"></i></div>';
+    h += '<div class="mini-btn danger" onclick="delSuspelCat(\''+s.id+'\')"><i class="ti ti-trash"></i></div>';
+    h += '</div>';
+  });
+  return h;
+}
+function addSuspelCat(){
+  const v=val('new-suspel'); if(!v)return;
+  CAT.suspel = CAT.suspel || [];
+  if(CAT.suspel.some(s=>s.nombre.toLowerCase()===v.toLowerCase())){ alert('Ya existe una sustancia con ese nombre'); return; }
+  CAT.suspel.push({id:uid(),nombre:v,vias:'',consecuencias:'',almacenamiento:'',incompatibilidad:'',medidas:'',epp:''}); saveCat(); rCatBody();
+}
+function delSuspelCat(id){ if(!confirm('¿Eliminar esta sustancia del catálogo?'))return; CAT.suspel=CAT.suspel.filter(s=>s.id!==id); saveCat(); rCatBody(); }
+let suspelEditId = null;
+function abrirEditarSuspel(id){
+  const s = CAT.suspel.find(x=>x.id===id); if(!s) return;
+  suspelEditId = id;
+  document.getElementById('se-nombre').value = s.nombre||'';
+  document.getElementById('se-vias').value = s.vias||'';
+  document.getElementById('se-consecuencias').value = s.consecuencias||'';
+  document.getElementById('se-almacenamiento').value = s.almacenamiento||'';
+  document.getElementById('se-incompatibilidad').value = s.incompatibilidad||'';
+  document.getElementById('se-medidas').value = s.medidas||'';
+  document.getElementById('se-epp').value = s.epp||'';
+  gt('s-suspel-edit');
+}
+function guardarSuspelEdit(){
+  const s = CAT.suspel.find(x=>x.id===suspelEditId); if(!s) return;
+  s.nombre = document.getElementById('se-nombre').value.trim() || s.nombre;
+  s.vias = document.getElementById('se-vias').value.trim();
+  s.consecuencias = document.getElementById('se-consecuencias').value.trim();
+  s.almacenamiento = document.getElementById('se-almacenamiento').value.trim();
+  s.incompatibilidad = document.getElementById('se-incompatibilidad').value.trim();
+  s.medidas = document.getElementById('se-medidas').value.trim();
+  s.epp = document.getElementById('se-epp').value.trim();
+  saveCat();
+  gt('s-catalogos'); catTab('suspel');
 }
 
 // ---- SENSIBILIDADES ----
@@ -2623,7 +3118,7 @@ function genPDF(e){
     y=26;
   }
   function checkPage(need){ if(y+need>PH-20){ doc.addPage(); y=M+4; } }
-  function san2(s){ return String(s==null?'':s); }
+  function san2(s){ return String(s==null?'':s).replace(/→/g,'->'); }
 
   header();
   // Datos cabecera
@@ -2633,7 +3128,7 @@ function genPDF(e){
     ['Cargo', e.trabCargo, 'Antigüedad', e.trabAntiguedad],
     ['Área', e.trabArea, 'Turno', e.trabTurno],
     ['Proceso', e.proceso, 'Tarea', e.tarea],
-    ['Tipo', e.tipoTarea, 'Lugar', e.lugar],
+    ['Tipo', e.tipoTarea, '', ''],
     ['N° ideal', e.nIdeal, 'N° real', e.nReal],
     ['Fecha', e.fecha, 'Hora', e.hora],
     ['Entrevistador', e.entrevistador, '', '']
@@ -2674,54 +3169,180 @@ function genPDF(e){
   doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text('PELIGROS IDENTIFICADOS (GEMA)', M+2, y); y+=8;
 
-  (e.peligros||[]).forEach((p,i)=>{
-    checkPage(40);
+  function construirCeldaPeligro(p, colW){
     const col = {gente:[15,76,129],equipos:[232,80,10],materiales:[42,125,70],ambiente:[122,77,158]}[p.gema]||[120,120,120];
-    doc.setFillColor(...col); doc.rect(M,y-4,3,32,'F');
-    doc.setTextColor(...col); doc.setFont('helvetica','bold'); doc.setFontSize(8);
-    doc.text((gemaNombre(p.gema)||'').toUpperCase()+(p.codigo?'  ·  '+p.codigo:''), M+5, y);
-    doc.setTextColor(0,0,0); doc.setFont('helvetica','normal'); doc.setFontSize(8); y+=5;
-    const desc=doc.splitTextToSize('Peligro: '+san2(p.descTerreno), PW-2*M-8); doc.text(desc, M+5, y); y+=desc.length*4+1;
-    if(p.riesgo){ const rr=doc.splitTextToSize('Riesgo ISP: '+san2(p.riesgo), PW-2*M-8); doc.text(rr,M+5,y); y+=rr.length*4+1; }
-    if(p.consecPersonas){ const cp=doc.splitTextToSize('Consec. personas: '+san2(p.consecPersonas), PW-2*M-8); doc.text(cp,M+5,y); y+=cp.length*4+1; }
-    // Evaluación
-    if(p.vep){ doc.setFont('helvetica','bold'); doc.text('P×C = '+p.prob+'×'+p.cons+' = VEP '+p.vep+' ('+p.nivel+')', M+5, y); doc.setFont('helvetica','normal'); y+=5; }
-    else if(p.protocolo){ doc.setFont('helvetica','bold'); doc.text('Protocolo: '+san2(p.protocolo)+' — '+san2(p.protocoloResultado)+(p.nivel?' | Nivel: '+san2(p.nivel):''), M+5, y); doc.setFont('helvetica','normal'); y+=5; }
+    const lineas = [];
+    lineas.push({t:(gemaNombre(p.gema)||'').toUpperCase()+(p.codigo?'  ·  '+p.codigo:''), b:true, c:col, h:5});
+    doc.splitTextToSize('Peligro: '+san2(p.descTerreno), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4}));
+    if(p.riesgo) doc.splitTextToSize('Riesgo ISP: '+san2(p.riesgo), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4}));
+    if(p.consecPersonas) doc.splitTextToSize('Consec. personas: '+san2(p.consecPersonas), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4}));
+    if(p.vep){ const nc=nivelColorRGB(p.nivel); lineas.push({t:'P×C = '+p.prob+'×'+p.cons+' = VEP '+p.vep+' ('+p.nivel+')', b:true, c:nc, h:5}); }
+    else if(p.protocolo){
+      doc.splitTextToSize('Protocolo: '+san2(p.protocolo)+' — '+san2(p.protocoloResultado), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4}));
+      if(p.nivel){ const nc=nivelColorRGB(p.nivel); lineas.push({t:'Nivel: '+p.nivel, b:true, c:nc, h:5}); }
+    }
+    if(p.controlActual) doc.splitTextToSize('Control existente: '+san2(p.controlActual), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[90,90,90],h:4}));
     if(p.controles && p.controles.length){
-      p.controles.forEach(c=>{ const ci=doc.splitTextToSize('Control ['+(c.jerarquia||'—')+']: '+san2(c.texto), PW-2*M-8); doc.text(ci,M+5,y); y+=ci.length*4+1; });
-    } else if(p.controlImplementar||p.controlSugerido){ const ci=doc.splitTextToSize('Control: '+san2(p.controlImplementar||p.controlSugerido)+(p.jerarquia?' ['+p.jerarquia+']':''), PW-2*M-8); doc.text(ci,M+5,y); y+=ci.length*4+1; }
-    if((p.sensibilidades||[]).length){ const sn=p.sensibilidades.map(id=>{const s=CAT.sensibilidades.find(x=>x.id===id);return s?s.nombre:'';}).filter(Boolean).join(', '); const ss=doc.splitTextToSize('Población sensible: '+sn, PW-2*M-8); doc.setTextColor(122,77,158); doc.text(ss,M+5,y); doc.setTextColor(0,0,0); y+=ss.length*4+1; }
-    y+=3;
-    doc.setDrawColor(230,230,230); doc.line(M,y-1,PW-M,y-1);
-  });
+      p.controles.forEach(c=>{ doc.splitTextToSize('Control ['+(c.jerarquia||'—')+' · '+(c.estado||'Pendiente')+']: '+san2(c.texto), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4})); });
+    } else if(p.controlImplementar||p.controlSugerido){
+      doc.splitTextToSize('Control: '+san2(p.controlImplementar||p.controlSugerido)+(p.jerarquia?' ['+p.jerarquia+']':''), colW-8).forEach(l=>lineas.push({t:l,b:false,c:[0,0,0],h:4}));
+    }
+    if((p.sensibilidades||[]).length){
+      const sn=p.sensibilidades.map(id=>{const s=CAT.sensibilidades.find(x=>x.id===id);return s?s.nombre:'';}).filter(Boolean).join(', ');
+      doc.splitTextToSize('Población sensible: '+sn, colW-8).forEach(l=>lineas.push({t:l,b:false,c:[122,77,158],h:4}));
+    }
+    let fotoData = null, fotoH = 0;
+    const imgLocal = p.foto || p.fotoThumb; // full si está, miniatura si la foto ya subió a Drive
+    if(imgLocal){
+      try{
+        const props = doc.getImageProperties(imgLocal);
+        const fw = colW-8;
+        fotoH = Math.min(fw*props.height/props.width, 45); // tope de 45mm de alto
+        fotoData = imgLocal;
+      }catch(err){ fotoData=null; }
+    } else if(p.fotoUrl){
+      lineas.push({t:'Foto disponible en Drive (ver matriz)', b:false, c:[232,80,10], h:4});
+    }
+    const totalH = lineas.reduce((a,l)=>a+l.h,0) + (fotoH?fotoH+2:0) + 3;
+    return { col, lineas, fotoData, fotoH, totalH };
+  }
+  function dibujarCeldaPeligro(celda, x, y0, colW){
+    doc.setFillColor(...celda.col); doc.rect(x,y0-4,3,celda.totalH,'F');
+    let yy=y0;
+    celda.lineas.forEach(l=>{ doc.setFont('helvetica', l.b?'bold':'normal'); doc.setFontSize(8); doc.setTextColor(...l.c); doc.text(l.t, x+5, yy); yy+=l.h; });
+    if(celda.fotoData){ try{ doc.addImage(celda.fotoData, 'JPEG', x+5, yy, colW-8, celda.fotoH); }catch(err){} }
+    doc.setTextColor(0,0,0); doc.setFont('helvetica','normal');
+  }
+  const ordenGema = {gente:0, equipos:1, materiales:2, ambiente:3};
+  const peligrosOrdenados = (e.peligros||[]).slice().sort((a,b)=>(ordenGema[a.gema]??9)-(ordenGema[b.gema]??9));
+  const gutter=6, colW=(PW-2*M-gutter)/2;
+  const yTope = PH-20;
+  for(let i=0;i<peligrosOrdenados.length;i+=2){
+    let celdaIzq = construirCeldaPeligro(peligrosOrdenados[i], colW);
+    let celdaDer = peligrosOrdenados[i+1] ? construirCeldaPeligro(peligrosOrdenados[i+1], colW) : null;
+    let filaH = Math.max(celdaIzq.totalH, celdaDer?celdaDer.totalH:0);
+    const espacioLibre = yTope - y;
+    // Si el par no cabe SOLO por una foto grande, encoger la(s) foto(s) para aprovechar el espacio
+    // restante en vez de saltar de página y desperdiciar media hoja.
+    if(filaH+8 > espacioLibre && espacioLibre > 55 && ((celdaIzq.fotoH>0)||(celdaDer&&celdaDer.fotoH>0))){
+      const recorte = (filaH+8) - espacioLibre;
+      [celdaIzq, celdaDer].forEach(c=>{
+        if(c && c.fotoH > 20){
+          c.fotoH = Math.max(20, c.fotoH - recorte);
+          c.totalH = c.lineas.reduce((a,l)=>a+l.h,0) + c.fotoH + 2 + 3;
+        }
+      });
+      filaH = Math.max(celdaIzq.totalH, celdaDer?celdaDer.totalH:0);
+    }
+    checkPage(filaH+8);
+    dibujarCeldaPeligro(celdaIzq, M, y, colW);
+    if(celdaDer) dibujarCeldaPeligro(celdaDer, M+colW+gutter, y, colW);
+    y += filaH+4;
+    doc.setDrawColor(230,230,230); doc.line(M,y-1,PW-M,y-1); y+=2;
+  }
 
-  // Observaciones
+  // Observaciones + Firmas: se reserva el alto combinado ANTES de empezar. Un solo salto de
+  // página aquí garantiza que ambas queden juntas y que se suban a aprovechar el espacio libre.
+  const FIRMAS_H = 46; // alto real del bloque de firmas (línea + firma + 3 líneas de texto)
+  let estObsH = 0;
   if(e.obsMejoras||e.obsPeligrosNoMenc||e.obsEPP){
-    checkPage(20); y+=2;
+    estObsH += 9;
+    [e.obsMejoras, e.obsPeligrosNoMenc, e.obsEPP].forEach(v=>{
+      if(!v) return;
+      estObsH += 4 + doc.splitTextToSize(san2(v), PW-2*M-4).length*4 + 2;
+    });
+  }
+  checkPage(estObsH + FIRMAS_H);
+
+  // Observaciones (sin checkPage interno: el bloque ya está reservado completo)
+  if(e.obsMejoras||e.obsPeligrosNoMenc||e.obsEPP){
+    y+=2;
     doc.setFillColor(...negro); doc.rect(M,y-4,PW-2*M,6,'F');
     doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
     doc.text('OBSERVACIONES DEL PREVENCIONISTA', M+2, y); y+=7;
     doc.setTextColor(0,0,0); doc.setFont('helvetica','normal'); doc.setFontSize(8);
     [['Mejoras', e.obsMejoras],['Peligros no mencionados', e.obsPeligrosNoMenc],['EPP que aplican al trabajo', e.obsEPP]].forEach(([l,v])=>{
-      if(!v)return; checkPage(8); doc.setFont('helvetica','bold'); doc.text(l+':', M+2, y); doc.setFont('helvetica','normal'); y+=4;
+      if(!v)return; doc.setFont('helvetica','bold'); doc.text(l+':', M+2, y); doc.setFont('helvetica','normal'); y+=4;
       const t=doc.splitTextToSize(san2(v), PW-2*M-4); doc.text(t,M+2,y); y+=t.length*4+2;
     });
   }
 
-  // Firmas (footer, delante del texto)
-  checkPage(35);
-  const fy = Math.min(y+10, PH-30);
-  doc.setDrawColor(0,0,0);
-  doc.line(M+8, fy, M+70, fy);
-  doc.line(PW-M-70, fy, PW-M-8, fy);
-  if(e.firmaTrabajador){ addImgFit(doc, e.firmaTrabajador, 'PNG', M+15, fy-16, 45, 16); }
-  if(usuarioActivo && usuarioActivo.firma){ addImgFit(doc, usuarioActivo.firma, 'PNG', PW-M-63, fy-16, 45, 16); }
-  doc.setFontSize(8); doc.setTextColor(0,0,0);
-  doc.text('Firma Trabajador Entrevistado', M+8, fy+5);
-  doc.text('Firma Prevencionista de Riesgos', PW-M-70, fy+5);
+  // Firmas — pegadas a lo anterior (sin volver a saltar de página), con un respiro mínimo
+  const fLineY = y + 18;
+  doc.setDrawColor(232,80,10); doc.setLineWidth(0.6);
+  doc.line(M+3, fLineY, M+91, fLineY);
+  doc.line(PW-M-91, fLineY, PW-M-3, fLineY);
+  doc.setLineWidth(0.2); doc.setDrawColor(0,0,0);
+
+  if(e.firmaTrabajador) addFirmaSobreLinea(doc, e.firmaTrabajador, 'PNG', M+47, fLineY, 88, 42, 0.35);
+  if(usuarioActivo && usuarioActivo.firma) addFirmaSobreLinea(doc, usuarioActivo.firma, 'PNG', PW-M-47, fLineY, 88, 42, 0.35);
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+  doc.text(san2(e.trabNombre||'Trabajador entrevistado'), M+47, fLineY+6, {align:'center'});
+  doc.text(san2(usuarioActivo?usuarioActivo.nombre:'Prevencionista'), PW-M-47, fLineY+6, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(110,110,110);
+  doc.text('Trabajador entrevistado', M+47, fLineY+10, {align:'center'});
+  doc.text(san2((usuarioActivo && usuarioActivo.cargo) ? usuarioActivo.cargo : 'Prevencionista de Riesgos'), PW-M-47, fLineY+10, {align:'center'});
+  if(usuarioActivo && usuarioActivo.registro) doc.text('Reg. '+san2(usuarioActivo.registro), PW-M-47, fLineY+14, {align:'center'});
+  doc.setTextColor(0,0,0);
 
   const nom = 'MIPER_'+san2(e.tarea).replace(/[^a-zA-Z0-9]/g,'_')+'_'+san2(e.fecha)+'.pdf';
   doc.save(nom);
+
+  // Archivar el PDF (con fotos ya embebidas) en Drive. Solo si esto se confirma
+  // se liberan las fotos crudas del dispositivo — nunca antes.
+  try{
+    const pdfB64 = doc.output('datauristring').split(',')[1];
+    intentarArchivarPDFEnDrive(e, pdfB64, nom);
+  }catch(err){}
+}
+
+// Sube el PDF final a Drive. Si el servidor confirma, guarda el link y libera las
+// fotos originales (quedan solo las miniaturas livianas para vista previa en la app).
+// Nombre de archivo único por intento: nunca se sobrescribe en Drive, así una
+// corrección posterior nunca borra una versión anterior más completa.
+async function intentarArchivarPDFEnDrive(e, pdfB64, nombreArchivo){
+  if(!usuarioActivo || !usuarioActivo.sheetUrl) return {ok:false, motivo:'Falta configurar la URL del Sheet en tu perfil'};
+  const nombreUnico = nombreArchivo.replace('.pdf','') + '_' + Date.now() + '.pdf';
+  try{
+    const resp = await fetch(usuarioActivo.sheetUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ accion:'archivarPDF', entrevistaId:e.id, pdfBase64:pdfB64, nombreArchivo:nombreUnico })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.url){
+      db = JSON.parse(localStorage.getItem(DK)||'[]');
+      const idx = db.findIndex(x=>x.id===e.id);
+      const target = idx>=0 ? db[idx] : e;
+      target.pdfDriveUrl = data.url;
+      target.pdfArchivadoFecha = hoy()+' '+hora();
+      quitarFotosEntrevista(target); // recién ahora, confirmado, se liberan las fotos crudas
+      if(idx>=0){ db[idx]=target; localStorage.setItem(DK, JSON.stringify(db)); }
+      if(entrevista && entrevista.id===e.id){
+        entrevista.pdfDriveUrl = target.pdfDriveUrl;
+        entrevista.pdfArchivadoFecha = target.pdfArchivadoFecha;
+        quitarFotosEntrevista(entrevista);
+      }
+      rHome();
+      if(document.getElementById('s-historial').classList.contains('active')) rHistorial();
+      return {ok:true, url:data.url};
+    }
+    return {ok:false, motivo:(data&&data.error)||'el servidor no confirmó la subida'};
+  }catch(err){
+    return {ok:false, motivo:'sin conexión con el servidor'};
+  }
+}
+// Libera las fotos originales de una entrevista ya archivada. Deja intactas las
+// miniaturas (livianas, sirven de vista previa) y las firmas (no son el problema de espacio).
+function quitarFotosEntrevista(e){
+  e.fotoTarea = null;
+  (e.peligros||[]).forEach(p=>{
+    p.foto = null;
+    (p.controles||[]).forEach(c=>{
+      (c.evidencias||[]).forEach(ev=>{ if(ev.tipo==='foto') ev.foto=null; });
+    });
+  });
 }
 
 
@@ -2747,11 +3368,17 @@ function rHistorial(){
     const btnMatriz = cargada
       ? '<button class="btn-sm" style="flex:1;background:#DFF0D8;color:#1E6B2E;border:1px solid #9CCFA5" onclick="enviarASheet(\''+e.id+'\')"><i class="ti ti-refresh"></i> Actualizar</button>'
       : '<button class="btn-sm" style="flex:1;background:#E8F5E9;color:#2E7D32" onclick="enviarASheet(\''+e.id+'\')"><i class="ti ti-table-plus"></i> Matriz</button>';
+    const archivada = !!e.pdfDriveUrl;
+    const listaParaArchivar = !!e.firmaTrabajador; // "cerrada" en MIPER = ya se firmó en terreno
+    const estadoArchivo = archivada
+      ? '<div style="font-size:10px;color:#0F4C81;margin-top:2px"><a href="'+e.pdfDriveUrl+'" target="_blank" style="color:#0F4C81"><i class="ti ti-cloud-check"></i> PDF archivado en Drive'+(e.pdfArchivadoFecha?' — '+san(e.pdfArchivadoFecha):'')+'</a></div>'
+      : (listaParaArchivar ? '<div style="font-size:10px;color:var(--orange);margin-top:2px;cursor:pointer" onclick="event.stopPropagation();reintentarArchivarPDF(\''+e.id+'\')"><i class="ti ti-cloud-off"></i> Sin archivar en Drive — tocar para reintentar</div>' : '');
     return '<div class="card"><div class="card-row">'+
       '<div class="icon-box" style="background:'+(cargada?'#2E7D32':'#0F4C81')+'"><i class="ti '+(cargada?'ti-clipboard-check':'ti-clipboard-list')+'" style="color:#fff;font-size:22px"></i></div>'+
       '<div style="flex:1"><div class="card-label">'+san(e.tarea||'(sin tarea)')+(cargada?' <i class="ti ti-circle-check-filled" style="color:#2E7D32;font-size:14px" title="Cargada en matriz"></i>':'')+'</div>'+
       '<div class="card-desc">'+san(e.trabNombre||'')+' · '+san(e.fecha||'')+' · '+nP+' peligro'+(nP!==1?'s':'')+(pend>0?' ('+pend+' sin clasificar)':'')+'</div>'+
-      (cargada&&e.sheetFecha?'<div style="font-size:10px;color:#2E7D32;margin-top:2px"><i class="ti ti-check"></i> En matriz: '+san(e.sheetFecha)+'</div>':'')+'</div>'+
+      (cargada&&e.sheetFecha?'<div style="font-size:10px;color:#2E7D32;margin-top:2px"><i class="ti ti-check"></i> En matriz: '+san(e.sheetFecha)+'</div>':'')+
+      estadoArchivo+'</div>'+
       '</div><div style="display:flex;gap:6px;margin-top:8px">'+
       '<button class="btn-sm" style="flex:1" onclick="reabrirEntrevista(\''+e.id+'\')"><i class="ti ti-microscope"></i> Clasificar</button>'+
       '<button class="btn-sm" style="flex:1" onclick="regenPDF(\''+e.id+'\')"><i class="ti ti-file-text"></i> PDF</button>'+
@@ -2773,8 +3400,17 @@ function regenPDF(id){
   db = JSON.parse(localStorage.getItem(DK)||'[]');
   const e = db.find(x=>x.id===id);
   if(!e) return;
+  if(e.pdfDriveUrl){ window.open(e.pdfDriveUrl, '_blank'); return; }
   entrevista = e;
-  genPDF(e);
+  genPDF(e); // sin archivar aún: genera local y de paso intenta archivar ahora que quizás sí hay conexión
+}
+async function reintentarArchivarPDF(id){
+  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  const e = db.find(x=>x.id===id);
+  if(!e) return;
+  if(e.pdfDriveUrl){ alert('Ya está archivada.'); return; }
+  entrevista = e;
+  genPDF(e); // regenera el PDF (con las fotos que aún queden locales) e intenta archivarlo
 }
 function delEntrevista(id){
   db = JSON.parse(localStorage.getItem(DK)||'[]');
