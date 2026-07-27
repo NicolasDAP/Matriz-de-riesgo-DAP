@@ -805,6 +805,25 @@ const LOGO_B64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAg
 
 // ═══════════════ ESTADO ═══════════════
 const DK = 'miper-db';
+// Lector seguro: si el localStorage está corrupto (escritura interrumpida, quota a mitad
+// de un setItem, etc.), NO rompe la app — devuelve un fallback y respalda el dato corrupto
+// para no perderlo del todo. Sin esto, un JSON truncado dejaba la app en blanco al arrancar.
+function safeParse(raw, fallback){
+  if(raw===null || raw===undefined) return fallback;
+  try{ return JSON.parse(raw); }
+  catch(err){ return fallback; }
+}
+function lsGet(key, fallback){
+  const raw = localStorage.getItem(key);
+  if(raw===null) return fallback;
+  try{ return JSON.parse(raw); }
+  catch(err){
+    // Respaldar el contenido corrupto por si se puede recuperar manualmente, y seguir
+    try{ localStorage.setItem(key+'__corrupto_'+Date.now(), raw); }catch(e){}
+    console.warn('localStorage corrupto en "'+key+'": se usó fallback. Copia de respaldo guardada.');
+    return fallback;
+  }
+}
 let db = [];
 let usuarioActivo = null;
 let entrevista = null; // entrevista en curso
@@ -817,7 +836,7 @@ let CAT = { areasMacro:[], areasEsp:[], procesos:[], tareas:[], herramientas:[],
 // procesos:   [{id,nombre,areaEspId}]
 // tareas:     [{id,nombre,procesoId,herrIds:[]}]
 // herramientas:[{id,nombre,peligros:[codigos]}]
-function loadCat(){ const c=localStorage.getItem(CATK); if(c){ CAT=JSON.parse(c);
+function loadCat(){ const c=localStorage.getItem(CATK); if(c){ CAT=safeParse(c, CAT);
   // Migración: si viene del modelo antiguo, inicializar campos nuevos
   if(!CAT.areasMacro) CAT.areasMacro = CAT.areas || [];
   if(!CAT.areasEsp) CAT.areasEsp = [];
@@ -892,15 +911,15 @@ function saveCat(){ localStorage.setItem(CATK, JSON.stringify(CAT)); }
 // ═══════════════ EXPORTAR / IMPORTAR CATÁLOGOS ═══════════════
 function exportarCatalogos(){
   // Respaldo completo: catálogos + entrevistas + perfil
-  const entrevistas = JSON.parse(localStorage.getItem(DK)||'[]');
+  const entrevistas = lsGet(DK,[]);
   const data = {
     _tipo: 'MIPER_respaldo',
     _version: 2,
     _fecha: hoy()+' '+hora(),
     catalogos: CAT,
     entrevistas: entrevistas,
-    usuarios: JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]'),
-    config: JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}')
+    usuarios: lsGet(USUARIOS_KEY,[]),
+    config: lsGet(CONFIG_KEY,{})
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -994,7 +1013,7 @@ function importarCatalogos(inp){
       }
 
       const entrevistasNuevas = esRespaldo ? (data.entrevistas||[]) : [];
-      const entrevistasActuales = JSON.parse(localStorage.getItem(DK)||'[]');
+      const entrevistasActuales = lsGet(DK,[]);
       // Contar cuántas entrevistas del archivo son nuevas (no existen por id)
       const idsActuales = entrevistasActuales.map(e=>e.id);
       const nuevasCount = entrevistasNuevas.filter(e=>!idsActuales.includes(e.id)).length;
@@ -1036,7 +1055,7 @@ function importarCatalogos(inp){
 
       // 3. Usuarios: fusionar por id (agrega los que falten, nunca pisa los que ya tienes)
       if(esRespaldo && data.usuarios && data.usuarios.length){
-        const usuariosActuales = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+        const usuariosActuales = lsGet(USUARIOS_KEY,[]);
         const idsUsuariosActuales = usuariosActuales.map(u=>u.id);
         const usuariosNuevos = data.usuarios.filter(u=>!idsUsuariosActuales.includes(u.id));
         if(usuariosNuevos.length){
@@ -1047,7 +1066,7 @@ function importarCatalogos(inp){
         }
       }
       // Config compartida (URL de Sheets): solo si no hay una ya configurada localmente
-      if(esRespaldo && data.config && data.config.sheetUrl && !JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}').sheetUrl){
+      if(esRespaldo && data.config && data.config.sheetUrl && !lsGet(CONFIG_KEY,{}).sheetUrl){
         localStorage.setItem(CONFIG_KEY, JSON.stringify(data.config));
       }
       cargarUsuarios();
@@ -1082,7 +1101,7 @@ function gt(id){
 }
 
 function rHome(){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   document.getElementById('st-entrevistas').textContent = db.length;
   let peligros=0, intolerables=0, sinClasificar=0, ctrlPend=0, noSync=0, sinArchivar=0;
   db.forEach(e=>{
@@ -1109,7 +1128,8 @@ function rHome(){
 function hoy(){const d=new Date();return d.toISOString().split('T')[0];}
 function hora(){const d=new Date();return d.toTimeString().slice(0,5);}
 function san(s){return String(s==null?'':s).replace(/[^\x00-\xFF]/g,c=>({'\u2013':'-','\u2014':'-','\u2019':"'",'\u201c':'"','\u201d':'"','\u2264':'<=','\u2265':'>=','\u00b0':' grados','\u00ba':'a','\u00aa':'a'}[c]||c));}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+let _uidSeq = 0;
+function uid(){ _uidSeq=(_uidSeq+1)%0xffff; return Date.now().toString(36)+_uidSeq.toString(36)+Math.random().toString(36).slice(2,7);}
 
 // (nuevaEntrevista redefinida en bloque de pantallas)
 
@@ -2116,7 +2136,7 @@ function rGabControles(){
 // ═══════════════ FOTOS A DRIVE: cola de subida con reintento ═══════════════
 const FOTOS_PEND_KEY = 'miper-fotos-pendientes';
 function encolarFotoPendiente(entrevistaId, campo, base64){
-  let cola = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
+  let cola = lsGet(FOTOS_PEND_KEY,[]);
   cola = cola.filter(x=>!(x.entrevistaId===entrevistaId && x.campo===campo));
   cola.push({ entrevistaId, campo, data:base64 });
   localStorage.setItem(FOTOS_PEND_KEY, JSON.stringify(cola));
@@ -2136,7 +2156,7 @@ function aplicarUrlFoto(entrevistaId, campo, url){
       }
     }
   }
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const idx = db.findIndex(x=>x.id===entrevistaId);
   if(idx>=0){
     if(campo==='tarea'){ db[idx].fotoTarea=null; db[idx].fotoTareaUrl=url; }
@@ -2152,10 +2172,15 @@ function aplicarUrlFoto(entrevistaId, campo, url){
     localStorage.setItem(DK, JSON.stringify(db));
   }
 }
+let _subiendoFotos = false;
 function intentarSubirFotosPendientes(onDone){
   if(!usuarioActivo || !usuarioActivo.sheetUrl){ if(onDone) onDone({error:'no-url'}); return; }
-  let cola = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
+  // Candado: si ya hay una tanda de subida en curso, no lanzar otra en paralelo
+  // (rHome dispara esto en cada entrada al inicio; sin candado se acumulaban fetch duplicados).
+  if(_subiendoFotos){ if(onDone) onDone({subidas:0, fallidas:0, total:0, ocupado:true}); return; }
+  let cola = lsGet(FOTOS_PEND_KEY,[]);
   if(cola.length===0){ rFotosPendientesBadge(); if(onDone) onDone({subidas:0, fallidas:0, total:0}); return; }
+  _subiendoFotos = true;
   let pendientes = cola.length, subidas = 0, fallidas = 0, ultimoError = '';
   cola.forEach(item=>{
     const carpeta = item.entrevistaId;
@@ -2166,22 +2191,22 @@ function intentarSubirFotosPendientes(onDone){
     }).then(r=>r.json()).then(res=>{
       if(res && res.ok && res.url){
         aplicarUrlFoto(item.entrevistaId, item.campo, res.url);
-        let colaAct = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
+        let colaAct = lsGet(FOTOS_PEND_KEY,[]);
         colaAct = colaAct.filter(x=>!(x.entrevistaId===item.entrevistaId && x.campo===item.campo));
         localStorage.setItem(FOTOS_PEND_KEY, JSON.stringify(colaAct));
         subidas++;
       } else { fallidas++; ultimoError = (res && res.error) ? res.error : 'respuesta inesperada del servidor'; }
       rFotosPendientesBadge();
-      if(--pendientes===0 && onDone) onDone({subidas, fallidas, total:cola.length, ultimoError});
+      if(--pendientes===0){ _subiendoFotos = false; if(onDone) onDone({subidas, fallidas, total:cola.length, ultimoError}); }
     }).catch(err=>{
       fallidas++; ultimoError = 'sin conexión con el servidor (o el Apps Script no tiene la función subirFoto)';
       rFotosPendientesBadge();
-      if(--pendientes===0 && onDone) onDone({subidas, fallidas, total:cola.length, ultimoError});
+      if(--pendientes===0){ _subiendoFotos = false; if(onDone) onDone({subidas, fallidas, total:cola.length, ultimoError}); }
     });
   });
 }
 function rFotosPendientesBadge(){
-  const cola = JSON.parse(localStorage.getItem(FOTOS_PEND_KEY)||'[]');
+  const cola = lsGet(FOTOS_PEND_KEY,[]);
   const el = document.getElementById('fotos-pend-badge');
   if(el) el.textContent = cola.length>0 ? ('📷 '+cola.length+' foto'+(cola.length!==1?'s':'')+' de evidencia (seguimiento) pendiente'+(cola.length!==1?'s':'')+' de subir — tocar para reintentar') : '';
 }
@@ -2231,7 +2256,7 @@ function cambiarEstadoControl(i,nuevoEstado){
 // ═══════════════ SEGUIMIENTO DE CONTROLES (todas las entrevistas) ═══════════════
 let segFiltro = 'Todos';
 function getControlesGlobal(filtro){
-  const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+  const dbAll = lsGet(DK,[]);
   const out = [];
   dbAll.forEach(e=>{
     (e.peligros||[]).forEach((p,pi)=>{
@@ -2247,7 +2272,7 @@ function getControlesGlobal(filtro){
 }
 function setFiltroSeg(f){ rSeguimiento(f); }
 function setEstadoControlGlobal(entrevistaId, peligroIdx, controlIdx, nuevoEstado){
-  const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+  const dbAll = lsGet(DK,[]);
   const idx = dbAll.findIndex(x=>x.id===entrevistaId);
   if(idx<0) return;
   const p = dbAll[idx].peligros[peligroIdx];
@@ -2266,7 +2291,7 @@ let segAbiertos = new Set();
 function agregarComentarioControl(entrevistaId, peligroIdx, controlIdx){
   const texto = prompt('Comentario / evidencia de texto:');
   if(!texto || !texto.trim()) return;
-  const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+  const dbAll = lsGet(DK,[]);
   const idx = dbAll.findIndex(x=>x.id===entrevistaId);
   if(idx<0) return;
   const p = dbAll[idx].peligros[peligroIdx];
@@ -2290,7 +2315,7 @@ function onFotoControl(inp){
   const ctx = fotoControlCtx;
   comprimirMiniatura(inp.files[0], (thumb)=>{
   comprimir(inp.files[0], (d)=>{
-    const dbAll = JSON.parse(localStorage.getItem(DK)||'[]');
+    const dbAll = lsGet(DK,[]);
     const idx = dbAll.findIndex(x=>x.id===ctx.entrevistaId);
     if(idx<0) return;
     const p = dbAll[idx].peligros[ctx.peligroIdx];
@@ -2424,7 +2449,7 @@ function guardarGabinete(){
 }
 
 function persistEntrevista(){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const i = db.findIndex(e=>e.id===entrevista.id);
   if(i>=0){ db[i]=entrevista; localStorage.setItem(DK, JSON.stringify(db)); }
 }
@@ -2512,10 +2537,10 @@ function migrarUsuarioLegacy(){
 }
 function cargarUsuarios(){
   migrarUsuarioLegacy();
-  usuarios = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+  usuarios = lsGet(USUARIOS_KEY,[]);
   usuarioActivoId = localStorage.getItem(USER_ACTIVO_KEY);
   usuarioActivo = usuarios.find(u=>u.id===usuarioActivoId) || null;
-  const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}');
+  const cfg = lsGet(CONFIG_KEY,{});
   if(usuarioActivo) usuarioActivo.sheetUrl = cfg.sheetUrl||'';
   if(document.getElementById('home-user')) document.getElementById('home-user').textContent = (usuarioActivo?usuarioActivo.nombre:'Sin perfil') + ' — Aerovías DAP';
 }
@@ -2556,7 +2581,7 @@ function guardarPerfil(){
   const cargo = document.getElementById('p-cargo').value.trim();
   const registro = document.getElementById('p-registro').value.trim();
   if(!nombre){ alert('Ingresa tu nombre'); return; }
-  usuarios = JSON.parse(localStorage.getItem(USUARIOS_KEY)||'[]');
+  usuarios = lsGet(USUARIOS_KEY,[]);
   if(usuarioEditId){
     const idx = usuarios.findIndex(u=>u.id===usuarioEditId);
     if(idx>=0) usuarios[idx] = Object.assign(usuarios[idx], {nombre, cargo, registro, firma:usuarioFirmaTmp});
@@ -2592,7 +2617,7 @@ function rUsuarios(){
       '<div class="mini-btn" onclick="event.stopPropagation();editarUsuario(\''+u.id+'\')"><i class="ti ti-pencil"></i></div>'+
       '</div></div>';
   }).join('');
-  const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}');
+  const cfg = lsGet(CONFIG_KEY,{});
   const urlEl = document.getElementById('p-sheet-url');
   if(urlEl) urlEl.value = cfg.sheetUrl||'';
 }
@@ -3045,7 +3070,7 @@ function toggleCheck(i){
 
 // ═══════════════ ENVÍO AL GOOGLE SHEET ═══════════════
 function enviarASheet(id){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const idx = db.findIndex(x=>x.id===id);
   const e = (idx>=0?db[idx]:null) || entrevista;
   if(!e){ alert('Entrevista no encontrada'); return; }
@@ -3060,6 +3085,13 @@ function enviarASheet(id){
   const payload = JSON.parse(JSON.stringify(e));
   payload.entrevistaId = e.id;
   payload.firmaTrabajadorFecha = e.firmaTrabajadorFecha || '';
+  // Aligerar el payload: el .gs no usa imágenes base64 — quitarlas evita transferir
+  // cientos de KB inútiles por entrevista (las fotos ya viajan embebidas en el PDF a Drive).
+  delete payload.fotoTarea; delete payload.fotoTareaThumb; delete payload.firmaTrabajador;
+  (payload.peligros||[]).forEach(p=>{
+    delete p.foto; delete p.fotoThumb;
+    (p.controles||[]).forEach(c=>{ (c.evidencias||[]).forEach(ev=>{ delete ev.foto; delete ev.fotoThumb; }); });
+  });
   (payload.peligros||[]).forEach(p=>{
     p.sensiblesNombres = (p.sensibilidades||[]).map(sid=>{
       const s = CAT.sensibilidades.find(x=>x.id===sid);
@@ -3091,7 +3123,7 @@ function finalizarEntrevista(sinPDF){
   // La firma del trabajador ya se capturó en la fase GEMA; no se sobrescribe aquí.
   entrevista.ts = Date.now();
   // Guardar o actualizar
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const existe = db.findIndex(e=>e.id===entrevista.id);
   if(existe>=0) db[existe]=entrevista; else db.push(entrevista);
   localStorage.setItem(DK, JSON.stringify(db));
@@ -3312,7 +3344,7 @@ async function intentarArchivarPDFEnDrive(e, pdfB64, nombreArchivo){
     });
     const data = await resp.json();
     if(data && data.ok && data.url){
-      db = JSON.parse(localStorage.getItem(DK)||'[]');
+      db = lsGet(DK,[]);
       const idx = db.findIndex(x=>x.id===e.id);
       const target = idx>=0 ? db[idx] : e;
       target.pdfDriveUrl = data.url;
@@ -3348,7 +3380,7 @@ function quitarFotosEntrevista(e){
 
 // ═══════════════ HISTORIAL ═══════════════
 function rHistorial(){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const el = document.getElementById('historial-list');
   if(db.length===0){ el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:24px 0">Sin entrevistas guardadas</div>'; return; }
   const qInp = document.getElementById('hist-search');
@@ -3388,7 +3420,7 @@ function rHistorial(){
   }).join('');
 }
 function reabrirEntrevista(id){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const e = db.find(x=>x.id===id);
   if(!e) return;
   entrevista = e;
@@ -3397,7 +3429,7 @@ function reabrirEntrevista(id){
   gt('s-peligros');
 }
 function regenPDF(id){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const e = db.find(x=>x.id===id);
   if(!e) return;
   if(e.pdfDriveUrl){ window.open(e.pdfDriveUrl, '_blank'); return; }
@@ -3405,7 +3437,7 @@ function regenPDF(id){
   genPDF(e); // sin archivar aún: genera local y de paso intenta archivar ahora que quizás sí hay conexión
 }
 async function reintentarArchivarPDF(id){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const e = db.find(x=>x.id===id);
   if(!e) return;
   if(e.pdfDriveUrl){ alert('Ya está archivada.'); return; }
@@ -3413,7 +3445,7 @@ async function reintentarArchivarPDF(id){
   genPDF(e); // regenera el PDF (con las fotos que aún queden locales) e intenta archivarlo
 }
 function delEntrevista(id){
-  db = JSON.parse(localStorage.getItem(DK)||'[]');
+  db = lsGet(DK,[]);
   const e = db.find(x=>x.id===id);
   if(!e) return;
   const nP = (e.peligros||[]).length;
