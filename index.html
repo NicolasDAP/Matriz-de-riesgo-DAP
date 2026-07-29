@@ -228,6 +228,15 @@ textarea{min-height:74px;resize:vertical}
 .cat-item-title{font-size:14px;font-weight:600;color:var(--black)}
 .cat-item-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .cat-parent-label{font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px}
+.est-breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:2px;background:var(--surface2);padding:8px 10px;border-radius:8px;font-size:12px}
+.est-crumb{color:var(--orange);font-weight:600;cursor:pointer;white-space:nowrap}
+.est-crumb-active{color:var(--black);font-weight:700;white-space:nowrap}
+.est-sep{color:var(--muted);font-size:12px;margin:0 1px}
+.est-item{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:7px;transition:border-color .15s}
+.est-item:active{border-color:var(--orange)}
+.est-item-main{flex:1;cursor:pointer;min-width:0}
+.est-item-title{font-size:14px;font-weight:600;color:var(--black)}
+.est-item-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .mini-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:15px}
 .mini-btn.danger{color:var(--red)}
 .gema-counter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
@@ -460,23 +469,29 @@ textarea{min-height:74px;resize:vertical}
   <button class="btn-sm" onclick="gt('s-home')" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Inicio</button>
   <div class="page-title">Catálogos maestros</div>
   <div class="page-sub">Configura una vez, reutiliza en cada entrevista</div>
-  <div class="cat-tabs">
-    <div class="cat-tab active" id="ctab-macro" onclick="catTab('macro')">Á. macro</div>
-    <div class="cat-tab" id="ctab-esp" onclick="catTab('esp')">Á. espec.</div>
-    <div class="cat-tab" id="ctab-procesos" onclick="catTab('procesos')">Procesos</div>
-    <div class="cat-tab" id="ctab-tareas" onclick="catTab('tareas')">Tareas</div>
-    <div class="cat-tab" id="ctab-herr" onclick="catTab('herr')">Herram.</div>
-    <div class="cat-tab" id="ctab-suspel" onclick="catTab('suspel')">Sustancias</div>
-    <div class="cat-tab" id="ctab-sens" onclick="catTab('sens')">Sensib.</div>
-    <div class="cat-tab" id="ctab-cargos" onclick="catTab('cargos')">Cargos</div>
-    <div class="cat-tab" id="ctab-epp" onclick="catTab('epp')">EPP</div>
+  <div class="cat-tabs" style="display:flex;gap:6px">
+    <div class="cat-tab active" id="ctab-estructura" style="flex:1;text-align:center" onclick="catTopTab('estructura')"><i class="ti ti-sitemap"></i> Estructura</div>
+    <div class="cat-tab" id="ctab-recursos" style="flex:1;text-align:center" onclick="catTopTab('recursos')"><i class="ti ti-list-details"></i> Recursos</div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn-sm" style="flex:1;background:#E8F0FB;color:#0F4C81" onclick="exportarCatalogos()"><i class="ti ti-download"></i> Exportar respaldo</button>
     <button class="btn-sm" style="flex:1;background:#FEF0E8;color:#E8500A" onclick="document.getElementById('cat-import-input').click()"><i class="ti ti-upload"></i> Importar respaldo</button>
     <input type="file" id="cat-import-input" accept=".json" style="display:none" onchange="importarCatalogos(this)">
   </div>
-  <div style="font-size:11px;color:var(--muted);background:var(--surface2);padding:8px 10px;border-radius:8px;margin-bottom:12px;line-height:1.4"><i class="ti ti-info-circle"></i> El respaldo incluye catálogos + entrevistas + perfil. Al importar: los <b>catálogos se reemplazan</b>; las <b>entrevistas nunca se borran</b> (solo se agregan o actualizan las del archivo).</div>
+  <div style="font-size:11px;color:var(--muted);background:var(--surface2);padding:8px 10px;border-radius:8px;margin-bottom:12px;line-height:1.4"><i class="ti ti-info-circle"></i> El respaldo incluye catálogos + entrevistas + perfiles. Al importar todo se <b>fusiona</b>: nada se borra, lo existente se actualiza y lo nuevo se agrega.</div>
+
+  <!-- Sub-pestañas de RECURSOS (solo visibles en esa vista) -->
+  <div class="cat-tabs" id="recursos-subtabs" style="display:none;flex-wrap:wrap;gap:6px">
+    <div class="cat-tab active" id="ctab-herr" onclick="catTab('herr')">Herram.</div>
+    <div class="cat-tab" id="ctab-suspel" onclick="catTab('suspel')">Sustancias</div>
+    <div class="cat-tab" id="ctab-sens" onclick="catTab('sens')">Sensib.</div>
+    <div class="cat-tab" id="ctab-cargos" onclick="catTab('cargos')">Cargos</div>
+    <div class="cat-tab" id="ctab-epp" onclick="catTab('epp')">EPP</div>
+  </div>
+
+  <!-- Breadcrumb de ESTRUCTURA (solo visible en esa vista) -->
+  <div id="estructura-breadcrumb" style="margin-bottom:12px"></div>
+
   <div id="cat-body"></div>
 </div>
 
@@ -1071,8 +1086,8 @@ function importarCatalogos(inp){
       }
       cargarUsuarios();
 
-      rCatBody();
-      alert('Importación completa.\nCatálogos reemplazados.'+(esRespaldo?'\n'+nuevasCount+' entrevistas nuevas agregadas, '+actualizaCount+' actualizadas.':''));
+      if(typeof refrescarCat==='function') refrescarCat(); else if(typeof catTopTab==='function') catTopTab('estructura');
+      alert('Importación completa (todo fusionado, nada borrado).'+(esRespaldo?'\n'+nuevasCount+' entrevistas nuevas, '+actualizaCount+' actualizadas.':''));
     } catch(err){
       alert('Error al leer el archivo: '+err);
     }
@@ -1092,7 +1107,7 @@ function gt(id){
   if(id==='s-suspel') rSuspelChips();
   if(id==='s-peligros'){ rPeligros(); setTimeout(()=>{ initFirmaCanvas(); mostrarEstadoFirma(); }, 100); }
   if(id==='s-cierre'){ rEppCierre(); rChecklistCierre(); }
-  if(id==='s-catalogos'){ loadCat(); rCatBody(); }
+  if(id==='s-catalogos'){ loadCat(); catTopTab('estructura'); }
   if(id==='s-historial') rHistorial();
   if(id==='s-seguimiento') rSeguimiento(segFiltro);
   if(id==='s-tarea-herr') rTareaHerrModal();
@@ -2635,19 +2650,139 @@ function onFirmaPerfil(inp){
 
 
 // ═══════════════ MÓDULO CATÁLOGOS ═══════════════
-let catActiveTab = 'macro';
+let catTopActive = 'estructura';
+let catActiveTab = 'herr'; // pestaña activa dentro de Recursos
+// Estado de navegación del drill-down de Estructura: qué nivel y qué padre
+let estNav = { nivel:'macro', macroId:null, espId:null, procId:null };
+
+function catTopTab(t){
+  catTopActive = t;
+  document.getElementById('ctab-estructura').classList.toggle('active', t==='estructura');
+  document.getElementById('ctab-recursos').classList.toggle('active', t==='recursos');
+  document.getElementById('recursos-subtabs').style.display = t==='recursos' ? 'flex' : 'none';
+  document.getElementById('estructura-breadcrumb').style.display = t==='estructura' ? 'block' : 'none';
+  if(t==='estructura'){ estNav={nivel:'macro',macroId:null,espId:null,procId:null}; rEstructura(); }
+  else rCatBody();
+}
 function catTab(t){
   catActiveTab = t;
-  ['macro','esp','procesos','tareas','herr','suspel','sens','cargos','epp'].forEach(x=>{
-    document.getElementById('ctab-'+x).classList.toggle('active', x===t);
+  ['herr','suspel','sens','cargos','epp'].forEach(x=>{
+    const el=document.getElementById('ctab-'+x); if(el) el.classList.toggle('active', x===t);
   });
   rCatBody();
 }
 function rCatBody(){
   const el = document.getElementById('cat-body');
-  const map = {macro:rCatMacro, esp:rCatEsp, procesos:rCatProcesos, tareas:rCatTareas, herr:rCatHerr, suspel:rCatSuspel, sens:rCatSens, cargos:rCatCargos, epp:rCatEpp};
-  el.innerHTML = (map[catActiveTab]||rCatMacro)();
+  const map = {herr:rCatHerr, suspel:rCatSuspel, sens:rCatSens, cargos:rCatCargos, epp:rCatEpp};
+  el.innerHTML = (map[catActiveTab]||rCatHerr)();
 }
+
+// ═══════════════ NAVEGADOR DRILL-DOWN DE ESTRUCTURA ═══════════════
+function estGo(nivel, id){
+  if(nivel==='macro'){ estNav={nivel:'macro',macroId:null,espId:null,procId:null}; }
+  else if(nivel==='esp'){ estNav={nivel:'esp',macroId:id,espId:null,procId:null}; }
+  else if(nivel==='proc'){ estNav.nivel='proc'; estNav.espId=id; estNav.procId=null; }
+  else if(nivel==='tarea'){ estNav.nivel='tarea'; estNav.procId=id; }
+  rEstructura();
+}
+function rEstructura(){
+  const bc = document.getElementById('estructura-breadcrumb');
+  const body = document.getElementById('cat-body');
+  // ----- Breadcrumb -----
+  let crumbs = ['<span class="est-crumb" onclick="estGo(\'macro\')"><i class="ti ti-building-factory"></i> Áreas</span>'];
+  if(estNav.macroId){
+    const m = CAT.areasMacro.find(x=>x.id===estNav.macroId);
+    if(m) crumbs.push('<span class="est-crumb" onclick="estGo(\'esp\',\''+m.id+'\')">'+san(m.nombre)+'</span>');
+  }
+  if(estNav.espId){
+    const e = CAT.areasEsp.find(x=>x.id===estNav.espId);
+    if(e) crumbs.push('<span class="est-crumb" onclick="estGo(\'proc\',\''+e.id+'\')">'+san(e.nombre)+'</span>');
+  }
+  if(estNav.procId){
+    const p = CAT.procesos.find(x=>x.id===estNav.procId);
+    if(p) crumbs.push('<span class="est-crumb-active">'+san(p.nombre)+'</span>');
+  }
+  bc.innerHTML = '<div class="est-breadcrumb">'+crumbs.join('<i class="ti ti-chevron-right est-sep"></i>')+'</div>';
+
+  // ----- Contenido según nivel -----
+  if(estNav.nivel==='macro') body.innerHTML = rEstMacro();
+  else if(estNav.nivel==='esp') body.innerHTML = rEstEsp();
+  else if(estNav.nivel==='proc') body.innerHTML = rEstProc();
+  else if(estNav.nivel==='tarea') body.innerHTML = rEstTarea();
+}
+
+// Fila navegable genérica: título + contador de hijos + botones editar/borrar + tap para entrar
+function estRow(nombre, contadorTxt, onEnter, editFn, delFn, id){
+  let h = '<div class="est-item">';
+  h += '<div class="est-item-main" onclick="'+onEnter+'">';
+  h += '<div class="est-item-title">'+san(nombre)+'</div>';
+  if(contadorTxt) h += '<div class="est-item-sub">'+contadorTxt+'</div>';
+  h += '</div>';
+  h += '<div class="mini-btn" onclick="event.stopPropagation();'+editFn+'"><i class="ti ti-pencil"></i></div>';
+  h += '<div class="mini-btn danger" onclick="event.stopPropagation();'+delFn+'"><i class="ti ti-trash"></i></div>';
+  if(onEnter && onEnter!=='void(0)') h += '<div class="mini-btn" onclick="'+onEnter+'"><i class="ti ti-chevron-right"></i></div>';
+  h += '</div>';
+  return h;
+}
+
+function rEstMacro(){
+  let h = estAddBox('new-est-macro','Nueva área macro (ej: Hangar 1)','estAddMacro()');
+  if(CAT.areasMacro.length===0) return h + emptyMsg('Sin áreas macro. Agrega la primera arriba.');
+  CAT.areasMacro.forEach(m=>{
+    const nEsp = CAT.areasEsp.filter(e=>e.areaMacroId===m.id).length;
+    h += estRow(m.nombre, nEsp+' área'+(nEsp!==1?'s':'')+' específica'+(nEsp!==1?'s':''),
+      "estGo('esp','"+m.id+"')", "editMacro('"+m.id+"')", "delMacro('"+m.id+"')", m.id);
+  });
+  return h;
+}
+function rEstEsp(){
+  const m = CAT.areasMacro.find(x=>x.id===estNav.macroId);
+  let h = estAddBox('new-est-esp','Nueva área específica en '+(m?san(m.nombre):''),'estAddEsp()');
+  const esps = CAT.areasEsp.filter(e=>e.areaMacroId===estNav.macroId);
+  if(esps.length===0) return h + emptyMsg('Sin áreas específicas aquí. Agrega la primera arriba.');
+  esps.forEach(e=>{
+    const nProc = CAT.procesos.filter(p=>p.areaEspId===e.id).length;
+    h += estRow(e.nombre, nProc+' proceso'+(nProc!==1?'s':''),
+      "estGo('proc','"+e.id+"')", "editEsp('"+e.id+"')", "delEsp('"+e.id+"')", e.id);
+  });
+  return h;
+}
+function rEstProc(){
+  const e = CAT.areasEsp.find(x=>x.id===estNav.espId);
+  let h = estAddBox('new-est-proc','Nuevo proceso en '+(e?san(e.nombre):''),'estAddProc()');
+  const procs = CAT.procesos.filter(p=>p.areaEspId===estNav.espId);
+  if(procs.length===0) return h + emptyMsg('Sin procesos aquí. Agrega el primero arriba.');
+  procs.forEach(p=>{
+    const nTar = CAT.tareas.filter(t=>t.procesoId===p.id).length;
+    h += estRow(p.nombre, nTar+' tarea'+(nTar!==1?'s':''),
+      "estGo('tarea','"+p.id+"')", "editProc('"+p.id+"')", "delProc('"+p.id+"')", p.id);
+  });
+  return h;
+}
+function rEstTarea(){
+  const p = CAT.procesos.find(x=>x.id===estNav.procId);
+  let h = estAddBox('new-est-tarea','Nueva tarea en '+(p?san(p.nombre):''),'estAddTarea()');
+  const tars = CAT.tareas.filter(t=>t.procesoId===estNav.procId);
+  if(tars.length===0) return h + emptyMsg('Sin tareas aquí. Agrega la primera arriba.');
+  tars.forEach(t=>{
+    // Las tareas son el último nivel: no se entra, solo editar/borrar
+    h += '<div class="est-item"><div class="est-item-main"><div class="est-item-title">'+san(t.nombre)+'</div></div>';
+    h += '<div class="mini-btn" onclick="editTarea(\''+t.id+'\')"><i class="ti ti-pencil"></i></div>';
+    h += '<div class="mini-btn danger" onclick="delTarea(\''+t.id+'\')"><i class="ti ti-trash"></i></div></div>';
+  });
+  return h;
+}
+// Caja de "agregar" que agrega directo al nivel actual (sin desplegable de padre)
+function estAddBox(inputId, placeholder, onAdd){
+  return '<div style="display:flex;gap:8px;margin-bottom:14px">'+
+    '<input type="text" id="'+inputId+'" placeholder="'+placeholder+'" style="flex:1;margin-bottom:0" onkeydown="if(event.key===\'Enter\')'+onAdd+'">'+
+    '<button class="btn-icon-add" onclick="'+onAdd+'"><i class="ti ti-plus"></i></button></div>';
+}
+// Agregadores que usan el contexto de navegación (el padre es donde estás parado)
+function estAddMacro(){ const v=val('new-est-macro'); if(!v)return; CAT.areasMacro.push({id:uid(),nombre:v}); saveCat(); rEstructura(); }
+function estAddEsp(){ const v=val('new-est-esp'); if(!v||!estNav.macroId)return; CAT.areasEsp.push({id:uid(),nombre:v,areaMacroId:estNav.macroId}); saveCat(); rEstructura(); }
+function estAddProc(){ const v=val('new-est-proc'); if(!v||!estNav.espId)return; CAT.procesos.push({id:uid(),nombre:v,areaEspId:estNav.espId}); saveCat(); rEstructura(); }
+function estAddTarea(){ const v=val('new-est-tarea'); if(!v||!estNav.procId)return; CAT.tareas.push({id:uid(),nombre:v,procesoId:estNav.procId,herrIds:[]}); saveCat(); rEstructura(); }
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
 
 // ---- ÁREAS MACRO ----
@@ -2663,11 +2798,12 @@ function rCatMacro(){
   });
   return h;
 }
+function refrescarCat(){ if(catTopActive==='estructura') rEstructura(); else rCatBody(); }
 function addMacro(){ const v=val('new-macro'); if(!v)return; CAT.areasMacro.push({id:uid(),nombre:v}); saveCat(); rCatBody(); }
-function editMacro(id){ const a=CAT.areasMacro.find(x=>x.id===id); const n=prompt('Editar área macro:',a.nombre); if(n&&n.trim()){a.nombre=n.trim();saveCat();rCatBody();} }
+function editMacro(id){ const a=CAT.areasMacro.find(x=>x.id===id); const n=prompt('Editar área macro:',a.nombre); if(n&&n.trim()){a.nombre=n.trim();saveCat();refrescarCat();} }
 function delMacro(id){
   if(CAT.areasEsp.some(e=>e.areaMacroId===id)){ if(!confirm('Tiene áreas específicas asociadas. ¿Eliminar igual?'))return; }
-  CAT.areasMacro=CAT.areasMacro.filter(a=>a.id!==id); saveCat(); rCatBody();
+  CAT.areasMacro=CAT.areasMacro.filter(a=>a.id!==id); saveCat(); refrescarCat();
 }
 
 // ---- ÁREAS ESPECÍFICAS ----
@@ -2697,10 +2833,10 @@ function addEsp(){
   CAT.areasEsp.push({id:uid(),nombre:v,areaMacroId:macroId}); saveCat(); rCatBody();
   document.getElementById('new-esp-macro').value=macroId;
 }
-function editEsp(id){ const e=CAT.areasEsp.find(x=>x.id===id); const n=prompt('Editar área específica:',e.nombre); if(n&&n.trim()){e.nombre=n.trim();saveCat();rCatBody();} }
+function editEsp(id){ const e=CAT.areasEsp.find(x=>x.id===id); const n=prompt('Editar área específica:',e.nombre); if(n&&n.trim()){e.nombre=n.trim();saveCat();refrescarCat();} }
 function delEsp(id){
   if(CAT.procesos.some(p=>p.areaEspId===id)){ if(!confirm('Tiene procesos asociados. ¿Eliminar igual?'))return; }
-  CAT.areasEsp=CAT.areasEsp.filter(e=>e.id!==id); saveCat(); rCatBody();
+  CAT.areasEsp=CAT.areasEsp.filter(e=>e.id!==id); saveCat(); refrescarCat();
 }
 
 // ---- PROCESOS ----
@@ -2750,10 +2886,10 @@ function addProc(){
   CAT.procesos.push({id:uid(),nombre:v,areaEspId:espId}); saveCat(); rCatBody();
   const sel=document.getElementById('new-proc-esp'); if(sel) sel.value=espId;
 }
-function editProc(id){ const p=CAT.procesos.find(x=>x.id===id); const n=prompt('Editar proceso:',p.nombre); if(n&&n.trim()){p.nombre=n.trim();saveCat();rCatBody();} }
+function editProc(id){ const p=CAT.procesos.find(x=>x.id===id); const n=prompt('Editar proceso:',p.nombre); if(n&&n.trim()){p.nombre=n.trim();saveCat();refrescarCat();} }
 function delProc(id){
   if(CAT.tareas.some(t=>t.procesoId===id)){ if(!confirm('Tiene tareas asociadas. ¿Eliminar igual?'))return; }
-  CAT.procesos=CAT.procesos.filter(p=>p.id!==id); saveCat(); rCatBody();
+  CAT.procesos=CAT.procesos.filter(p=>p.id!==id); saveCat(); refrescarCat();
 }
 
 // ---- TAREAS ----
@@ -2786,8 +2922,8 @@ function addTarea(){
   CAT.tareas.push({id:uid(),nombre:v,procesoId,herrIds:[]}); saveCat(); rCatBody();
   document.getElementById('new-tarea-proc').value=procesoId;
 }
-function editTarea(id){ const t=CAT.tareas.find(x=>x.id===id); const n=prompt('Editar tarea:',t.nombre); if(n&&n.trim()){t.nombre=n.trim();saveCat();rCatBody();} }
-function delTarea(id){ CAT.tareas=CAT.tareas.filter(t=>t.id!==id); saveCat(); rCatBody(); }
+function editTarea(id){ const t=CAT.tareas.find(x=>x.id===id); const n=prompt('Editar tarea:',t.nombre); if(n&&n.trim()){t.nombre=n.trim();saveCat();refrescarCat();} }
+function delTarea(id){ if(!confirm('¿Eliminar esta tarea?'))return; CAT.tareas=CAT.tareas.filter(t=>t.id!==id); saveCat(); refrescarCat(); }
 function editTareaHerr(tareaId){
   if(CAT.herramientas.length===0){ alert('Primero crea herramientas en la pestaña Herram.'); return; }
   tareaHerrEdit=tareaId; rTareaHerrModal(); gt('s-tarea-herr');
