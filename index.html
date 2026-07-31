@@ -472,6 +472,7 @@ textarea{min-height:74px;resize:vertical}
   <div class="cat-tabs" style="display:flex;gap:6px">
     <div class="cat-tab active" id="ctab-estructura" style="flex:1;text-align:center" onclick="catTopTab('estructura')"><i class="ti ti-sitemap"></i> Estructura</div>
     <div class="cat-tab" id="ctab-recursos" style="flex:1;text-align:center" onclick="catTopTab('recursos')"><i class="ti ti-list-details"></i> Recursos</div>
+    <div class="cat-tab" id="ctab-aie" style="flex:1;text-align:center" onclick="catTopTab('aie')"><i class="ti ti-alert-triangle"></i> AIE</div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button class="btn-sm" style="flex:1;background:#E8F0FB;color:#0F4C81" onclick="exportarCatalogos()"><i class="ti ti-download"></i> Exportar respaldo</button>
@@ -538,6 +539,7 @@ textarea{min-height:74px;resize:vertical}
 
   <!-- Botón agregar -->
   <button class="btn btn-orange" style="margin-top:10px" onclick="abrirNuevoPeligro()"><i class="ti ti-plus"></i> Agregar peligro</button>
+  <button class="btn btn-sec" style="margin-top:8px" onclick="registrarAieDesdeEntrevista()"><i class="ti ti-alert-triangle"></i> Registrar accidente/incidente mencionado</button>
 
   <div class="sec-div" style="margin-top:18px">FIRMA DEL TRABAJADOR</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px">El trabajador firma validando los peligros que identificó (consulta y participación, DS 44). El análisis técnico posterior es responsabilidad del prevencionista.</div>
@@ -662,6 +664,7 @@ textarea{min-height:74px;resize:vertical}
     <div id="gab-eval-seguridad">
       <div class="sec-div" style="margin-top:16px">EVALUACIÓN VEP (Seguridad)</div>
       <label class="fl">Probabilidad</label>
+      <div id="gab-aie-hint" style="margin-bottom:6px"></div>
       <div class="pc-row" id="gab-prob-row"></div>
       <label class="fl">Consecuencia (sobre Personas)</label>
       <div class="pc-row" id="gab-cons-row"></div>
@@ -845,7 +848,7 @@ let entrevista = null; // entrevista en curso
 
 // ═══════════════ CATÁLOGOS MAESTROS ═══════════════
 const CATK = 'miper-catalogos';
-let CAT = { areasMacro:[], areasEsp:[], procesos:[], tareas:[], herramientas:[], sensibilidades:[], cargos:[], epp:[] };
+let CAT = { areasMacro:[], areasEsp:[], procesos:[], tareas:[], herramientas:[], sensibilidades:[], cargos:[], epp:[], aie:[] };
 // areasMacro: [{id,nombre}]
 // areasEsp:   [{id,nombre,areaMacroId}]
 // procesos:   [{id,nombre,areaEspId}]
@@ -855,6 +858,7 @@ function loadCat(){ const c=localStorage.getItem(CATK); if(c){ CAT=safeParse(c, 
   // Migración: si viene del modelo antiguo, inicializar campos nuevos
   if(!CAT.areasMacro) CAT.areasMacro = CAT.areas || [];
   if(!CAT.areasEsp) CAT.areasEsp = [];
+  if(!CAT.aie) CAT.aie = [];
   if(!CAT.sensibilidades || CAT.sensibilidades.length===0) CAT.sensibilidades = JSON.parse(JSON.stringify(SENSIBILIDADES_BASE));
   if(!CAT._herrBaseCargado){ 
     const existentes = (CAT.herramientas||[]).map(h=>h.nombre);
@@ -1260,12 +1264,13 @@ function guardarDatos(){
   entrevista.trabAreaMacro = macro?macro.nombre:'';
   entrevista.trabAreaEsp = esp?esp.nombre:'';
   entrevista.trabArea = [entrevista.trabAreaMacro, entrevista.trabAreaEsp].filter(Boolean).join(' › ');
+  entrevista._areaMacroId = macroId; entrevista._areaEspId = espId;
   entrevista.trabSexo = document.getElementById('d-sexo').value;
   entrevista.trabTurno = document.getElementById('d-turno').value;
   // Proceso
   const procSel = document.getElementById('d-proceso').value;
-  if(procSel==='__otro') entrevista.proceso = document.getElementById('d-proceso-otro').value.trim();
-  else { const proc = CAT.procesos.find(p=>p.id===procSel); entrevista.proceso = proc?proc.nombre:''; }
+  if(procSel==='__otro'){ entrevista.proceso = document.getElementById('d-proceso-otro').value.trim(); entrevista._procesoId=''; }
+  else { const proc = CAT.procesos.find(p=>p.id===procSel); entrevista.proceso = proc?proc.nombre:''; entrevista._procesoId = procSel; }
   // Tarea
   const tareaSel = document.getElementById('d-tarea').value;
   if(tareaSel==='__otro') entrevista.tarea = document.getElementById('d-tarea-otro').value.trim();
@@ -2046,6 +2051,13 @@ function renderProbCons(){
   // Solo dibuja según el estado actual, sin resetear
   const pr = document.getElementById('gab-prob-row');
   const cr = document.getElementById('gab-cons-row');
+  const hintEl = document.getElementById('gab-aie-hint');
+  if(hintEl && entrevista){
+    const r = aieContarRelacionados(entrevista._tareaId, entrevista._procesoId, entrevista._areaEspId);
+    if(r.n>0){
+      hintEl.innerHTML = '<div style="font-size:11px;color:var(--orange);background:#FEF0E8;padding:6px 10px;border-radius:8px"><i class="ti ti-alert-triangle"></i> '+r.n+' evento(s) registrado(s) a nivel de '+r.nivel+' (Accidentes/Incidentes) — referencia histórica, no fija la probabilidad automáticamente.</div>';
+    } else hintEl.innerHTML = '';
+  }
   if(pr) pr.innerHTML = PC_VALS.map(x=>'<div class="pc-chip'+(gabProb==x.v?' on':'')+'" onclick="selProb('+x.v+')">'+x.v+'<span>'+x.l+'</span></div>').join('');
   if(cr) cr.innerHTML = PC_VALS.map(x=>'<div class="pc-chip'+(gabCons==x.v?' on':'')+'" onclick="selCons('+x.v+')">'+x.v+'<span>'+x.l+'</span></div>').join('');
   updateVEP();
@@ -2659,9 +2671,11 @@ function catTopTab(t){
   catTopActive = t;
   document.getElementById('ctab-estructura').classList.toggle('active', t==='estructura');
   document.getElementById('ctab-recursos').classList.toggle('active', t==='recursos');
+  document.getElementById('ctab-aie').classList.toggle('active', t==='aie');
   document.getElementById('recursos-subtabs').style.display = t==='recursos' ? 'flex' : 'none';
   document.getElementById('estructura-breadcrumb').style.display = t==='estructura' ? 'block' : 'none';
   if(t==='estructura'){ estNav={nivel:'macro',macroId:null,espId:null,procId:null}; rEstructura(); }
+  else if(t==='aie'){ document.getElementById('cat-body').innerHTML = rAIE(); }
   else rCatBody();
 }
 function catTab(t){
@@ -2798,7 +2812,7 @@ function rCatMacro(){
   });
   return h;
 }
-function refrescarCat(){ if(catTopActive==='estructura') rEstructura(); else rCatBody(); }
+function refrescarCat(){ if(catTopActive==='estructura') rEstructura(); else if(catTopActive==='aie') document.getElementById('cat-body').innerHTML=rAIE(); else rCatBody(); }
 function addMacro(){ const v=val('new-macro'); if(!v)return; CAT.areasMacro.push({id:uid(),nombre:v}); saveCat(); rCatBody(); }
 function editMacro(id){ const a=CAT.areasMacro.find(x=>x.id===id); const n=prompt('Editar área macro:',a.nombre); if(n&&n.trim()){a.nombre=n.trim();saveCat();refrescarCat();} }
 function delMacro(id){
@@ -3041,6 +3055,157 @@ function rCatCargos(){
 function addCargo(){ const v=val('new-cargo'); if(!v)return; CAT.cargos.push({id:uid(),nombre:v}); saveCat(); rCatBody(); }
 function editCargo(id){ const c=CAT.cargos.find(x=>x.id===id); const n=prompt('Editar cargo:',c.nombre); if(n&&n.trim()){c.nombre=n.trim();saveCat();rCatBody();} }
 function delCargo(id){ CAT.cargos=CAT.cargos.filter(c=>c.id!==id); saveCat(); rCatBody(); }
+
+// ═══════════════ REGISTROS AIE (Accidentes, Incidentes, Emergencias) ═══════════════
+const AIE_TIPOS = ['Accidente con tiempo perdido','Accidente sin tiempo perdido','Incidente / casi accidente','Emergencia'];
+const AIE_GRAVEDAD = ['Leve','Moderada','Grave','Fatal'];
+let aieEditId = null;
+
+let aieDesdeEntrevista = null;
+function registrarAieDesdeEntrevista(){
+  if(!entrevista){ alert('No hay entrevista en curso.'); return; }
+  gt('s-catalogos');
+  catTopTab('aie');
+  toggleAieForm(true);
+  aieDesdeEntrevista = entrevista.id;
+  document.getElementById('aie-form-title').textContent = 'Nuevo registro — desde entrevista en curso';
+  if(entrevista._areaMacroId){
+    document.getElementById('aie-macro').value = entrevista._areaMacroId;
+    aiePoblarEsp();
+    if(entrevista._areaEspId){ document.getElementById('aie-esp').value = entrevista._areaEspId; aiePoblarProc(); }
+    if(entrevista._procesoId){ document.getElementById('aie-proceso').value = entrevista._procesoId; aiePoblarTarea(); }
+    if(entrevista._tareaId){ document.getElementById('aie-tarea').value = entrevista._tareaId; }
+  }
+}
+function aiePoblarEsp(){
+  const macroId = val('aie-macro');
+  const sel = document.getElementById('aie-esp');
+  sel.innerHTML = '<option value="">—</option>' + CAT.areasEsp.filter(e=>e.areaMacroId===macroId).map(e=>'<option value="'+e.id+'">'+e.nombre+'</option>').join('');
+  document.getElementById('aie-proceso').innerHTML='<option value="">—</option>';
+  document.getElementById('aie-tarea').innerHTML='<option value="">—</option>';
+}
+function aiePoblarProc(){
+  const espId = val('aie-esp');
+  const sel = document.getElementById('aie-proceso');
+  sel.innerHTML = '<option value="">—</option>' + CAT.procesos.filter(p=>p.areaEspId===espId).map(p=>'<option value="'+p.id+'">'+p.nombre+'</option>').join('');
+  document.getElementById('aie-tarea').innerHTML='<option value="">—</option>';
+}
+function aiePoblarTarea(){
+  const procId = val('aie-proceso');
+  const sel = document.getElementById('aie-tarea');
+  sel.innerHTML = '<option value="">—</option>' + CAT.tareas.filter(t=>t.procesoId===procId).map(t=>'<option value="'+t.id+'">'+t.nombre+'</option>').join('');
+}
+function toggleAieForm(abrir, registro){
+  const box = document.getElementById('aie-form-box');
+  if(box) box.style.display = abrir ? 'block' : 'none';
+  if(!abrir) return;
+  aieEditId = registro ? registro.id : null;
+  document.getElementById('aie-form-title').textContent = registro ? 'Editar registro' : 'Nuevo registro';
+  document.getElementById('aie-tipo').value = registro ? registro.tipo : AIE_TIPOS[2];
+  document.getElementById('aie-gravedad').value = registro ? registro.gravedad : AIE_GRAVEDAD[0];
+  document.getElementById('aie-fecha').value = registro ? registro.fecha : hoy();
+  document.getElementById('aie-desc').value = registro ? registro.descripcion : '';
+  document.getElementById('aie-personas').value = registro ? (registro.personasInvolucradas||'') : '';
+  document.getElementById('aie-medidas').value = registro ? (registro.medidasTomadas||'') : '';
+  document.getElementById('aie-macro').innerHTML = '<option value="">—</option>' + optsMacro(registro?registro.areaMacroId:null);
+  if(registro && registro.areaMacroId){ aiePoblarEsp(); document.getElementById('aie-esp').value=registro.areaEspId||''; }
+  if(registro && registro.areaEspId){ aiePoblarProc(); document.getElementById('aie-proceso').value=registro.procesoId||''; }
+  if(registro && registro.procesoId){ aiePoblarTarea(); document.getElementById('aie-tarea').value=registro.tareaId||''; }
+  window.scrollTo(0,0);
+}
+function guardarAIE(){
+  const macroId = val('aie-macro');
+  const descripcion = document.getElementById('aie-desc').value.trim();
+  if(!macroId){ alert('Selecciona al menos el área macro donde ocurrió.'); return; }
+  if(!descripcion){ alert('Describe qué ocurrió.'); return; }
+  const reg = {
+    id: aieEditId || uid(),
+    tipo: document.getElementById('aie-tipo').value,
+    gravedad: document.getElementById('aie-gravedad').value,
+    fecha: document.getElementById('aie-fecha').value || hoy(),
+    areaMacroId: macroId, areaEspId: val('aie-esp'), procesoId: val('aie-proceso'), tareaId: val('aie-tarea'),
+    descripcion, personasInvolucradas: document.getElementById('aie-personas').value.trim(),
+    medidasTomadas: document.getElementById('aie-medidas').value.trim(),
+    origen: aieDesdeEntrevista ? 'entrevista' : 'directo',
+    entrevistaId: aieDesdeEntrevista || undefined
+  };
+  if(aieEditId){
+    const idx = CAT.aie.findIndex(a=>a.id===aieEditId);
+    if(idx>=0) CAT.aie[idx] = Object.assign({}, CAT.aie[idx], reg);
+  } else CAT.aie.push(reg);
+  saveCat();
+  const volverAEntrevista = aieDesdeEntrevista;
+  aieDesdeEntrevista = null;
+  toggleAieForm(false);
+  if(volverAEntrevista && entrevista && entrevista.id===volverAEntrevista){ alert('Registrado. Volviendo a la entrevista.'); gt('s-peligros'); }
+  else refrescarCat();
+}
+function delAIE(id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  CAT.aie = CAT.aie.filter(a=>a.id!==id);
+  saveCat();
+  refrescarCat();
+}
+function aieNombreLugar(a){
+  const m = CAT.areasMacro.find(x=>x.id===a.areaMacroId);
+  const e = CAT.areasEsp.find(x=>x.id===a.areaEspId);
+  const p = CAT.procesos.find(x=>x.id===a.procesoId);
+  const t = CAT.tareas.find(x=>x.id===a.tareaId);
+  return [m&&m.nombre, e&&e.nombre, p&&p.nombre, t&&t.nombre].filter(Boolean).join(' › ') || '(sin ubicación)';
+}
+function aieColorTipo(tipo){ return {'Accidente con tiempo perdido':'#C62828','Accidente sin tiempo perdido':'#E8500A','Incidente / casi accidente':'#F9A825','Emergencia':'#6C3483'}[tipo]||'#888'; }
+
+function aieContarRelacionados(tareaId, procesoId, areaEspId){
+  if(!CAT.aie || CAT.aie.length===0) return {n:0, nivel:''};
+  let n = tareaId ? CAT.aie.filter(a=>a.tareaId===tareaId).length : 0;
+  let nivel = 'tarea';
+  if(n===0 && procesoId){ n = CAT.aie.filter(a=>a.procesoId===procesoId).length; nivel='proceso'; }
+  if(n===0 && areaEspId){ n = CAT.aie.filter(a=>a.areaEspId===areaEspId).length; nivel='área'; }
+  return {n, nivel};
+}
+
+function rAIE(){
+  let h = '<div style="font-size:11px;color:var(--muted);background:var(--surface2);padding:8px 10px;border-radius:8px;margin-bottom:12px;line-height:1.4"><i class="ti ti-info-circle"></i> Registra accidentes, incidentes (casi accidentes) y emergencias, ubicados en la misma jerarquía de áreas. Sirven de referencia histórica al evaluar Probabilidad en el VEP.</div>';
+  h += '<button class="btn btn-orange" style="margin-bottom:12px" onclick="toggleAieForm(true)"><i class="ti ti-plus"></i> Registrar evento</button>';
+  h += '<div id="aie-form-box" style="display:none;margin-bottom:16px;background:var(--surface2);border-radius:12px;padding:14px">';
+  h += '<div class="page-sub" id="aie-form-title" style="margin-bottom:10px;font-weight:700;color:var(--black)"></div>';
+  h += '<label class="fl">Tipo de evento</label><select id="aie-tipo">'+AIE_TIPOS.map(t=>'<option>'+t+'</option>').join('')+'</select>';
+  h += '<label class="fl">Gravedad</label><select id="aie-gravedad">'+AIE_GRAVEDAD.map(g=>'<option>'+g+'</option>').join('')+'</select>';
+  h += '<label class="fl">Fecha</label><input type="date" id="aie-fecha">';
+  h += '<label class="fl">Área macro</label><select id="aie-macro" onchange="aiePoblarEsp()"><option value="">—</option>'+optsMacro()+'</select>';
+  h += '<label class="fl">Área específica</label><select id="aie-esp" onchange="aiePoblarProc()"><option value="">—</option></select>';
+  h += '<label class="fl">Proceso (opcional)</label><select id="aie-proceso" onchange="aiePoblarTarea()"><option value="">—</option></select>';
+  h += '<label class="fl">Tarea (opcional)</label><select id="aie-tarea"><option value="">—</option></select>';
+  h += '<label class="fl">¿Qué ocurrió?</label><textarea id="aie-desc" style="min-height:60px" placeholder="Descripción del evento"></textarea>';
+  h += '<label class="fl">N° personas involucradas (opcional)</label><input type="number" id="aie-personas" placeholder="0">';
+  h += '<label class="fl">Medidas tomadas (opcional)</label><textarea id="aie-medidas" style="min-height:50px"></textarea>';
+  h += '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-sec" style="flex:1" onclick="cancelarAieForm()">Cancelar</button><button class="btn btn-orange" style="flex:1" onclick="guardarAIE()">Guardar</button></div>';
+  h += '</div>';
+
+  const lista = (CAT.aie||[]).slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  if(lista.length===0) h += emptyMsg('Sin registros todavía.');
+  lista.forEach(a=>{
+    const col = aieColorTipo(a.tipo);
+    h += '<div class="cat-item" style="align-items:flex-start;border-left:3px solid '+col+'">';
+    h += '<div class="cat-item-main">';
+    h += '<div class="cat-item-title" style="color:'+col+'">'+san(a.tipo)+' · '+san(a.gravedad)+'</div>';
+    h += '<div style="font-size:12px;color:#555;margin-top:2px">'+san(a.descripcion)+'</div>';
+    h += '<div class="cat-item-sub" style="margin-top:4px"><i class="ti ti-map-pin"></i> '+san(aieNombreLugar(a))+'</div>';
+    h += '<div class="cat-item-sub">'+san(a.fecha)+(a.personasInvolucradas?' · '+san(a.personasInvolucradas)+' persona(s)':'')+(a.origen==='entrevista'?' · <span style="color:var(--orange)">desde entrevista</span>':'')+'</div>';
+    h += '</div>';
+    h += '<div class="mini-btn" onclick="abrirEditarAIE(\''+a.id+'\')"><i class="ti ti-pencil"></i></div>';
+    h += '<div class="mini-btn danger" onclick="delAIE(\''+a.id+'\')"><i class="ti ti-trash"></i></div>';
+    h += '</div>';
+  });
+  return h;
+}
+function abrirEditarAIE(id){ const a = CAT.aie.find(x=>x.id===id); if(a) toggleAieForm(true, a); }
+function cancelarAieForm(){
+  const volver = aieDesdeEntrevista;
+  aieDesdeEntrevista = null;
+  toggleAieForm(false);
+  if(volver && entrevista && entrevista.id===volver) gt('s-peligros');
+}
 
 // ---- EPP ----
 function rCatEpp(){
